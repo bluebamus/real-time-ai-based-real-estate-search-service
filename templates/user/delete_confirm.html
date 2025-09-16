@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}회원탈퇴 - AI 부동산 검색 서비스{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white text-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>회원탈퇴 확인
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>주의사항</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>탈퇴 후에는 계정 복구가 불가능합니다.</li>
+                        <li>모든 개인정보와 이용 기록이 삭제됩니다.</li>
+                        <li>진행 중인 서비스가 있다면 모두 중단됩니다.</li>
+                    </ul>
+                </div>
+
+                <div class="text-center my-4">
+                    <h5 class="text-danger">
+                        정말로 탈퇴하시겠습니까?
+                    </h5>
+                    <p class="text-muted">
+                        {{ user.username }}님의 계정이 완전히 삭제됩니다.
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{% url 'user:update' %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-2"></i>취소
+                        </a>
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('정말로 탈퇴하시겠습니까?')">
+                            <i class="fas fa-user-times me-2"></i>탈퇴하기
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        탈퇴 처리는 즉시 이루어지며, 데이터는 안전하게 삭제됩니다.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

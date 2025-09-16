@@ -2,7 +2,6 @@ import csv
 import time
 import traceback
 import sys
-from datetime import datetime
 from playwright.sync_api import sync_playwright, Error, Page, Browser, BrowserContext
 
 class NaverRealEstateScraper:
@@ -120,98 +119,6 @@ class NaverRealEstateScraper:
         self.page.wait_for_load_state("networkidle")
         time.sleep(2)
 
-    def _parse_price(self, price_str: str) -> int:
-        """
-        '억', '천'과 같은 한글이 포함된 가격 문자열을 숫자(int)로 변환합니다.
-        '~'가 포함된 범위 가격의 경우 앞의 값만 사용합니다.
-        """
-        price_str = price_str.strip()
-        if not price_str:
-            return 0
-        
-        if '~' in price_str:
-            price_str = price_str.split('~')[0].strip()
-
-        try:
-            price_str = price_str.replace(',', '')
-            
-            parts = price_str.split('억')
-            billions = 0
-            millions = 0
-            
-            if len(parts) == 2:
-                if parts[0].strip():
-                    billions = int(parts[0].strip()) * 10000
-                if parts[1].strip().replace('천',''):
-                    millions = int(parts[1].strip().replace('천',''))
-            elif len(parts) == 1:
-                if '천' in parts[0]:
-                    millions = int(parts[0].replace('천','').strip())
-                else:
-                    millions = int(parts[0].strip())
-            
-            return (billions + millions) * 10000
-            
-        except (ValueError, IndexError) as e:
-            print(f"[DEBUG]  - 가격 변환 오류: '{price_str}'. 오류: {e}")
-            return 0
-
-    def _parse_date(self, date_str: str) -> str:
-        """
-        '확인매물 YY.MM.DD.' 형식의 날짜 문자열을 'YYYY-MM-DD' 형식으로 변환합니다.
-        """
-        try:
-            date_str = date_str.strip()
-            if not date_str:
-                return ""
-            
-            clean_str = date_str.replace('확인매물', '').replace('.', '').strip()
-            dt_obj = datetime.strptime(f"20{clean_str}", "%Y%m%d")
-            return dt_obj.strftime("%Y-%m-%d")
-        except (ValueError, IndexError) as e:
-            print(f"[DEBUG]  - 날짜 변환 오류: '{date_str}'. 오류: {e}")
-            return ""
-
-    def _parse_specification(self, spec_str: str) -> dict:
-        """
-        '사양' 문자열을 '평수', '층정보', '집방향'으로 파싱합니다.
-        """
-        pyeong = 0.0
-        floor_info = ""
-        direction = ""
-
-        if not spec_str:
-            return {"평수": pyeong, "층정보": floor_info, "집방향": direction}
-
-        parts = [p.strip() for p in spec_str.split(',')]
-
-        # 1. 평수 계산
-        if len(parts) > 0:
-            area_part = parts[0]
-            if '/' in area_part and '㎡' in area_part:
-                try:
-                    # 예: '109/84.77㎡' -> '84.77'
-                    sq_meter_str = area_part.split('/')[1].replace('㎡', '').strip()
-                    sq_meter = float(sq_meter_str)
-                    # 1평 = 3.305785㎡
-                    pyeong = round(sq_meter / 3.305785, 2)
-                    print(f"[DEBUG]  - 사양 (평수 변환): '{sq_meter_str}㎡' -> '{pyeong}'평")
-                except (ValueError, IndexError) as e:
-                    print(f"[DEBUG]  - 평수 변환 오류: '{area_part}'. 오류: {e}")
-                    pyeong = 0.0
-
-        # 2. 층정보
-        if len(parts) > 1:
-            floor_info = parts[1]
-            print(f"[DEBUG]  - 사양 (층정보): '{floor_info}'")
-
-        # 3. 집방향
-        if len(parts) > 2:
-            direction = parts[2]
-            print(f"[DEBUG]  - 사양 (집방향): '{direction}'")
-
-        return {"평수": pyeong, "층정보": floor_info, "집방향": direction}
-
     def _extract_data_from_item(self, item_element) -> dict:
         """
         단일 매물 아이템 요소에서 데이터를 추출하고 디버깅 출력을 추가합니다.
@@ -247,27 +154,14 @@ class NaverRealEstateScraper:
             print(f"[DEBUG]  - {field_name}: 요소를 찾을 수 없음 (실패)")
             return ""
 
-        raw_price = get_text_or_default(inner_item.locator("div.price_area > strong.price"), "가격 (원시값)")
-        processed_price = self._parse_price(raw_price)
-        print(f"[DEBUG]  - 가격 (변환됨): '{processed_price}'")
-
-        raw_date = get_text_or_default(inner_item.locator("span.icon-badge.type-confirmed"), "갱신일 (원시값)")
-        processed_date = self._parse_date(raw_date)
-        print(f"[DEBUG]  - 갱신일 (변환됨): '{processed_date}'")
-
-        raw_spec = get_text_or_default(inner_item.locator("div.information_area p.info > span.spec"), "사양 (원시값)")
-        processed_spec = self._parse_specification(raw_spec)
-
         data = {
             "집주인": get_text_or_default(inner_item.locator("em.title_place"), "집주인"),
             "거래타입": get_text_or_default(inner_item.locator("div.price_area > span.type"), "거래타입"),
-            "가격": processed_price,
+            "가격": get_text_or_default(inner_item.locator("div.price_area > strong.price"), "가격"),
             "건물 종류": get_text_or_default(inner_item.locator("div.information_area p.info > strong.type"), "건물 종류"),
-            "평수": processed_spec["평수"],
-            "층정보": processed_spec["층정보"],
-            "집방향": processed_spec["집방향"],
+            "사양": get_text_or_default(inner_item.locator("div.information_area p.info > span.spec"), "사양"),
             "tag": get_all_texts_or_default(inner_item.locator("div.tag_area > em.tag"), "tag"),
-            "갱신일": processed_date
+            "갱신일": get_text_or_default(inner_item.locator("span.icon-badge.type-confirmed"), "갱신일")
         }
         
         # 유효성 검사: "집주인" 필드가 비어있으면 유효하지 않은 데이터로 간주

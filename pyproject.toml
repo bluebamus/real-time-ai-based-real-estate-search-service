@@ -1,5 +1,5 @@
 [project]
-name = "sns-account-generator"
+name = "real-time-ai-real-estate-search"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -11,4 +11,113 @@ dependencies = [
     "jupyterlab>=4.4.7",
     "nest-asyncio>=1.6.0",
     "playwright>=1.55.0",
+    "pytest>=7.0",
+    "pytest-django>=4.5",
+    "pytest-cov>=4.0",
+    "pytest-xdist>=3.0",
+    "python-dotenv>=1.1.1",
+    "mysqlclient>=2.2.7",
+    "openai>=1.107.3",
 ]
+
+
+[tool.pytest.ini_options]
+# pytest 최소 버전
+minversion = "6.0"
+
+# Django 테스트 파일 경로 (각 앱의 tests 디렉토리 포함)
+testpaths = [
+    ".",                    # 프로젝트 루트에서 시작
+    "tests",               # 전역 tests 디렉토리
+]
+
+# Django 앱 테스트 파일 패턴
+python_files = [
+    "test_*.py", 
+    "*_test.py",
+    "tests.py",            # Django 기본 테스트 파일
+    "test*.py"             # Django 앱의 test 파일들
+]
+
+python_classes = ["Test*", "*Tests", "*TestCase"]  # Django TestCase 포함
+python_functions = ["test_*"]
+
+# Django 관련 기본 실행 옵션
+addopts = [
+    "-v",                           # 자세한 출력
+    "--tb=short",                   # 트레이스백 형식
+    "--reuse-db",                   # DB 재사용으로 속도 향상
+    "--nomigrations",               # 마이그레이션 없이 테스트 (빠른 실행)
+    "--durations=10",               # 느린 테스트 상위 10개 표시
+    "--strict-markers",             # 정의되지 않은 마커 금지
+]
+
+# Django 특화 커스텀 마커
+markers = [
+    # 기존 마커들
+    "slow: 실행 시간이 오래 걸리는 테스트",
+    "integration: 통합 테스트",
+    "unit: 단위 테스트",
+    "api: API 관련 테스트",
+    "database: 데이터베이스 테스트",
+    "external: 외부 서비스 의존 테스트",
+    "smoke: 기본 기능 확인 테스트",
+    "regression: 회귀 테스트",
+    "security: 보안 관련 테스트",
+    "performance: 성능 테스트",
+    
+    # Django 특화 마커들
+    "models: Django 모델 테스트",
+    "views: Django 뷰 테스트",
+    "forms: Django 폼 테스트",
+    "templates: Django 템플릿 테스트",
+    "urls: Django URL 패턴 테스트",
+    "middleware: Django 미들웨어 테스트",
+    "admin: Django 어드민 테스트",
+    "signals: Django 신호 테스트",
+    "migrations: Django 마이그레이션 테스트",
+    "commands: Django 관리 명령어 테스트",
+    "celery: Celery 작업 테스트",
+    "channels: Django Channels 테스트",
+    "rest: Django REST Framework 테스트",
+]
+
+# Django 관련 경고 필터
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    # Django 특화 경고 무시
+    "ignore:.*USE_TZ.*:RuntimeWarning",
+    "ignore:.*DateTimeField.*:RuntimeWarning", 
+    "ignore::django.utils.deprecation.RemovedInDjango60Warning",
+]
+
+# 로그 설정
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Django 테스트 환경 설정
+DJANGO_SETTINGS_MODULE = "config.settings"
+
+# 테스트 타임아웃 (Django는 DB 작업으로 인해 더 길게)
+timeout = 600
+
+# 기타 설정
+maxfail = 3                                    # Django에서는 더 적게
+norecursedirs = [
+    ".git", 
+    ".tox", 
+    "node_modules", 
+    "*.egg-info",
+    "migrations",                              # 마이그레이션 디렉토리 제외
+    "static",                                  # 정적 파일 디렉토리 제외
+    "media",                                   # 미디어 파일 디렉토리 제외
+    "locale",                                  # 번역 파일 디렉토리 제외
+]
+
+# Django 테스트 데이터베이스 설정
+django_find_project = true                     # Django 프로젝트 자동 찾기 활성화

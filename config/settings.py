@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-l66*h3nw(6!f^941vvbjkl2a7d@%z(t8iy0n4h=h!8+fgy%ayz"
+SECRET_KEY = os.getenv('SECRET_KEY', "django-insecure-l66*h3nw(6!f^941vvbjkl2a7d@%z(t8iy0n4h=h!8+fgy%ayz")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = []
 
@@ -38,6 +43,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_extensions",
+    "user",
+    "home",
+    "board",
 ]
 
 MIDDLEWARE = [
@@ -55,10 +63,11 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -75,8 +84,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv('DB_NAME', 'ai_test_prj'),
+        "USER": os.getenv('DB_USER', 'ai_admin'),
+        "PASSWORD": os.getenv('DB_PASSWORD', 'test1324'),
+        "HOST": os.getenv('DB_HOST', 'localhost'),
+        "PORT": os.getenv('DB_PORT', '3306'),
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -121,3 +138,13 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# OpenAI API Configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+
+# Login/Logout URLs
+LOGIN_URL = '/user/login/'
+LOGIN_REDIRECT_URL = '/home/'
+LOGOUT_REDIRECT_URL = '/'
