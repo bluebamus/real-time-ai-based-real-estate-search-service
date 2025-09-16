@@ -18,6 +18,12 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "mysqlclient>=2.2.7",
     "openai>=1.107.3",
+    "redis>=6.4.0",
+    "celery>=5.5.3",
+    "python-decouple>=3.8",
+    "djangorestframework>=3.16.1",
+    "django-cors-headers>=4.8.0",
+    "django-celery-beat>=2.8.1",
 ]
 
 
