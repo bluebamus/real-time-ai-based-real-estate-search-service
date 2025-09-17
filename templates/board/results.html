@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}검색 결과 - AI 부동산 검색{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/board.css' %}"> {# Optional: for board-specific styling #}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">부동산 검색 결과</h2>
+
+    {% if search_history %}
+        <div class="alert alert-info text-center" role="alert">
+            <strong>검색어:</strong> {{ search_history.query_text }}
+            <br>
+            <strong>추출된 키워드:</strong> {{ search_history.parsed_keywords }}
+        </div>
+    {% endif %}
+
+    {% if properties %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for property in properties %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    {% if property.image_urls %}
+                        <img src="{{ property.image_urls.0 }}" class="card-img-top" alt="Property Image">
+                    {% else %}
+                        <img src="{% static 'img/default_property.png' %}" class="card-img-top" alt="Default Image">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ property.address }}</h5>
+                        <p class="card-text">
+                            <strong>거래:</strong> {{ property.transaction_type }}<br>
+                            <strong>가격:</strong> {{ property.price|floatformat:"0" }}원<br>
+                            <strong>유형:</strong> {{ property.building_type }}<br>
+                            <strong>평수:</strong> {{ property.area_pyeong }}평<br>
+                            <strong>층:</strong> {{ property.floor_info }}<br>
+                            <strong>방향:</strong> {{ property.direction }}<br>
+                            {% if property.tags %}
+                                <strong>태그:</strong>
+                                {% for tag in property.tags %}
+                                    <span class="badge bg-secondary me-1">{{ tag }}</span>
+                                {% endfor %}
+                                <br>
+                            {% endif %}
+                            <strong>갱신일:</strong> {{ property.updated_date|date:"Y-m-d" }}
+                        </p>
+                        {% if property.detail_url %}
+                            <a href="{{ property.detail_url }}" class="btn btn-primary btn-sm" target="_blank">상세보기</a>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer text-muted">
+                        <small>크롤링 일시: {{ property.crawled_date|date:"Y-m-d H:i" }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {# Pagination controls #}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&search_history_id={{ search_history.id }}">이전</a></li>
+                {% endif %}
+
+                {% for i in paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}&search_history_id={{ search_history.id }}">{{ i }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&search_history_id={{ search_history.id }}">다음</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            검색 결과가 없습니다. 다른 검색어를 시도해보세요.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

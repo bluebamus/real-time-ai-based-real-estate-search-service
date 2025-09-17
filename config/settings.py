@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     "user",
     "home",
     "board",
-    "utils",
 ]
 
 MIDDLEWARE = [

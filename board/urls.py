@@ -1,12 +1,10 @@
-"""
-URL configuration for board app
-"""
 from django.urls import path
-from . import views
+from .views import PropertyListView # Import the new view
 
 app_name = 'board'
 
 urlpatterns = [
-    # Placeholder URLs - to be implemented later
-    path('', views.index, name='index'),
+    path('results/', PropertyListView.as_view(), name='results'), # New URL for property list
+    # Remove the old placeholder index view
+    # path('', views.index, name='index'),
 ]

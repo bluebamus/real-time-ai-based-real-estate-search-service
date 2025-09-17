@@ -86,6 +86,8 @@ markers = [
     "celery: Celery 작업 테스트",
     "channels: Django Channels 테스트",
     "rest: Django REST Framework 테스트",
+    "board_app: Board 앱 관련 테스트", # Added
+    "chatgpt: ChatGPT API 관련 테스트", # Added
 ]
 
 # Django 관련 경고 필터

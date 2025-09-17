@@ -58,6 +58,7 @@ class KeywordParser:
     def parse(self, raw_keywords: Dict[str, Any]) -> Dict[str, Any]:
         """
         ChatGPT에서 추출된 키워드를 검증하고 기본값을 적용하여 최종 파싱된 키워드를 반환
+        새로운 ChatGPT API 응답 형식 (배열 형태)을 처리
 
         Args:
             raw_keywords: ChatGPT에서 추출된 원본 키워드 딕셔너리
@@ -65,17 +66,123 @@ class KeywordParser:
         Returns:
             검증 및 기본값 적용이 완료된 키워드 딕셔너리
         """
-        # 1. 데이터 타입 변환 및 정제
-        processed_keywords = self._process_data_types(raw_keywords)
+        # 1. 새로운 형식을 기존 형식으로 변환
+        converted_keywords = self._convert_new_format_to_legacy(raw_keywords)
 
-        # 2. 기본값 적용
+        # 2. 데이터 타입 변환 및 정제
+        processed_keywords = self._process_data_types(converted_keywords)
+
+        # 3. 기본값 적용
         keywords_with_defaults = self.apply_defaults(processed_keywords)
 
-        # 3. 필수 필드 검증
+        # 4. 필수 필드 검증
         if not self.validate_required_fields(keywords_with_defaults):
             raise ValueError("필수 검색 키워드(주소)가 유효하지 않습니다.")
 
         return keywords_with_defaults
+
+    def _convert_new_format_to_legacy(self, new_keywords: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        새로운 ChatGPT API 응답 형식을 기존 파서가 처리할 수 있는 형식으로 변환
+
+        새로운 형식:
+        - transaction_type: ["매매", "전세"] (배열)
+        - building_type: ["아파트", "오피스텔"] (배열)
+        - deposit: [500000000] 또는 [100000000, 500000000] (배열)
+        - monthly_rent: [500000] 또는 [300000, 800000] (배열)
+        - area_range: "30평대" (문자열)
+
+        기존 형식:
+        - transaction_type: "매매" (문자열, 첫 번째 값 사용)
+        - building_type: "아파트" (문자열, 첫 번째 값 사용)
+        - price_max: 500000000 (정수, deposit의 최대값 또는 단일값)
+        - area_pyeong: 30 (정수, area_range에서 추출)
+
+        Args:
+            new_keywords: 새로운 형식의 키워드 딕셔너리
+
+        Returns:
+            기존 형식으로 변환된 키워드 딕셔너리
+        """
+        converted = {}
+
+        # address는 그대로 유지
+        if 'address' in new_keywords:
+            converted['address'] = new_keywords['address']
+
+        # transaction_type: 배열의 첫 번째 값 사용
+        if 'transaction_type' in new_keywords and new_keywords['transaction_type']:
+            if isinstance(new_keywords['transaction_type'], list):
+                converted['transaction_type'] = new_keywords['transaction_type'][0]
+            else:
+                converted['transaction_type'] = new_keywords['transaction_type']
+
+        # building_type: 배열의 첫 번째 값 사용
+        if 'building_type' in new_keywords and new_keywords['building_type']:
+            if isinstance(new_keywords['building_type'], list):
+                converted['building_type'] = new_keywords['building_type'][0]
+            else:
+                converted['building_type'] = new_keywords['building_type']
+
+        # deposit을 price_max로 변환 (최대값 또는 단일값 사용)
+        if 'deposit' in new_keywords and new_keywords['deposit'] is not None:
+            if isinstance(new_keywords['deposit'], list) and len(new_keywords['deposit']) > 0:
+                # 배열의 마지막 값이 최대값
+                converted['price_max'] = new_keywords['deposit'][-1]
+
+        # monthly_rent는 현재 기존 시스템에서 사용하지 않으므로 무시
+
+        # area_range를 area_pyeong으로 변환
+        if 'area_range' in new_keywords and new_keywords['area_range'] is not None:
+            converted['area_pyeong'] = self._extract_pyeong_from_range(new_keywords['area_range'])
+
+        # 기존 필드들 중 누락된 것들은 null로 설정
+        default_fields = {
+            'owner_type': None,
+            'floor_info': None,
+            'direction': None,
+            'updated_date': None,
+            'tags': []
+        }
+
+        for field, default_value in default_fields.items():
+            if field not in converted:
+                converted[field] = default_value
+
+        return converted
+
+    def _extract_pyeong_from_range(self, area_range: str) -> Optional[int]:
+        """
+        area_range 문자열에서 평수 추출
+
+        Args:
+            area_range: "30평대", "~ 10평", "70평 ~" 등의 문자열
+
+        Returns:
+            추출된 평수 (정수)
+        """
+        if not area_range:
+            return None
+
+        # "30평대" -> 30
+        if '평대' in area_range:
+            match = re.search(r'(\d+)평대', area_range)
+            if match:
+                return int(match.group(1))
+
+        # "~ 10평" -> 10
+        if area_range.startswith('~') and '평' in area_range:
+            match = re.search(r'~\s*(\d+)평', area_range)
+            if match:
+                return int(match.group(1))
+
+        # "70평 ~" -> 70
+        if area_range.endswith('~'):
+            match = re.search(r'(\d+)평?\s*~', area_range)
+            if match:
+                return int(match.group(1))
+
+        return None
 
     def _process_data_types(self, keywords: Dict[str, Any]) -> Dict[str, Any]:
         """

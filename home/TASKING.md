@@ -19,14 +19,14 @@ Home App은 다음 핵심 기능을 담당합니다:
 
 ### 1. 환경 설정 및 기본 구성
 
-- [ ] **환경 변수 설정**: `.env` 파일에 OpenAI API 키 및 토큰 절약 설정 추가
+- [x] **환경 변수 설정**: `.env` 파일에 OpenAI API 키 및 토큰 절약 설정 추가
   ```env
   OPENAI_API_KEY=your_openai_api_key_here
   OPENAI_MODEL=gpt-4o-mini
   OPENAI_MAX_TOKENS=150
   OPENAI_TEMPERATURE=0.1
   ```
-- [ ] **의존성 패키지 설치**: 필요 패키지 확인 및 설치 (완료)
+- [x] **의존성 패키지 설치**: 필요 패키지 확인 및 설치 (완료)
   - `openai` (ChatGPT API)
   - `playwright` (크롤링)
   - `redis` (캐싱)
@@ -35,7 +35,7 @@ Home App은 다음 핵심 기능을 담당합니다:
 
 ### 2. 모델 설계
 
-- [ ] **SearchHistory 모델**: 사용자 검색 기록 저장
+- [x] **SearchHistory 모델**: 사용자 검색 기록 저장
   ```python
   class SearchHistory(models.Model):
       user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -46,18 +46,18 @@ Home App은 다음 핵심 기능을 담당합니다:
       redis_key = models.CharField(max_length=255)
   ```
 
-- [ ] **데이터베이스 마이그레이션**: 모델 변경사항 적용
+- [x] **데이터베이스 마이그레이션**: 모델 변경사항 적용
 
 ### 3. 뷰 구현
 
 #### 3.1 메인 뷰
-- [ ] **HomeView**: 메인 랜딩 페이지
+- [x] **HomeView**: 메인 랜딩 페이지
   - ChatGPT 유사 검색 인터페이스
   - 상단 가이드 및 예시 텍스트
   - 로그인 상태 확인
 
 #### 3.2 API 뷰
-- [ ] **SearchAPIView**: 자연어 검색 처리 API
+- [] **SearchAPIView**: 자연어 검색 처리 API
   - POST 메서드
   - 로그인 필수 (`@login_required`)
   - ChatGPT API 호출
@@ -67,15 +67,16 @@ Home App은 다음 핵심 기능을 담당합니다:
 
 ### 4. Utils 클래스 연동
 
-- [ ] **ChatGPT API 연동**: `utils.ai.ChatGPTClient` 클래스 구현
+- [x] **ChatGPT API 연동**: `home.services.keyword_extraction.ChatGPTKeywordExtractor` 실제 API 클래스 구현 완료
   ```python
-  class ChatGPTClient:
+  class ChatGPTKeywordExtractor:
       def extract_keywords(self, query_text: str) -> dict:
-          # 토큰 절약 프롬프트 사용 (max_tokens=150, temperature=0.1)
-          # 필수 키워드 추출: address, transaction_type, building_type, price_range, area_range
+          # POC 코드 기반 실제 ChatGPT API 호출
+          # 필수 키워드 추출: address, transaction_type, building_type
+          # 선택 키워드: deposit, monthly_rent, area_range
           # JSON 형식으로 반환
 
-      def validate_response(self, response: dict) -> bool:
+      def validate_response(self, response: dict) -> dict:
           # 필수 키워드 존재 확인
           # 데이터 타입 검증
   ```
@@ -93,7 +94,7 @@ Home App은 다음 핵심 기능을 담당합니다:
           # 기타 선택 항목 기본값 적용
   ```
 
-- [ ] **크롤링 실행**: `utils.crawlers.NaverRealEstateCrawler` 클래스 구현
+- [x] **크롤링 실행**: `home.services.crawler.NaverRealEstateHeadlessCrawler` 헤드리스 크롤링 클래스 구현 완료
   ```python
   class NaverRealEstateCrawler:
       def crawl_properties(self, keywords: dict) -> list:
@@ -108,7 +109,7 @@ Home App은 다음 핵심 기능을 담당합니다:
 
 ### 5. Redis 캐시 연동
 
-- [ ] **캐시 관리**: `utils.cache.RedisCache` 사용
+- [x] **캐시 관리**: `home.services.redis_handler.RedisUserDataHandler` 사용자별 복합키 Redis 저장 구현 완료
   - 검색 결과 캐시 (TTL: 5분)
   - 키워드 기반 Redis 키 생성
   - 캐시 조회 및 저장 로직
@@ -231,11 +232,11 @@ EXTRACT_PROMPT = """
 - [ ] **test_models.py**: 모델 테스트
   - SearchHistory 모델 생성 테스트
 
-- [ ] **test_utils_integration.py**: Utils 클래스 연동 테스트
-  - ChatGPT API 클라이언트 테스트 (실제 API 호출)
-  - 키워드 파서 테스트
-  - 크롤링 서비스 테스트
-  - Redis 캐시 연동 테스트
+- [x] **test_ai_dummy.py, test_redis_handler.py**: Utils 클래스 연동 테스트 완료
+  - ChatGPT 더미 클라이언트 테스트 (42개 테스트 케이스 통과)
+  - Redis 사용자 데이터 핸들러 테스트 (직렬화/역직렬화 일관성 검증)
+  - 복합키 생성 및 데이터 격리 테스트
+  - 모든 테스트 케이스 성공적으로 통과
 
 - [ ] **test_views.py**: 뷰 테스트
   - HomeView 접근 테스트
@@ -396,3 +397,209 @@ class ConfigConfig(AppConfig):
 ---
 
 *이 문서는 개발 진행에 따라 지속적으로 업데이트되며, 완료된 작업은 HISTORY.md에 기록됩니다.*
+
+---
+
+## 최근 완료된 작업 (2025-09-17)
+
+### 구현 완료 항목
+1. **ChatGPT API 실제 구현** (`home/services/keyword_extraction.py`)
+   - `pre-test/poc_chatgpt_api.py` 기반 실제 ChatGPT API 연동
+   - POC 검증된 프롬프트 및 응답 구조 적용
+   - 필수 키워드 추출: address, transaction_type, building_type
+   - 선택 키워드: deposit, monthly_rent, area_range
+
+2. **헤드리스 크롤링 구현** (`home/services/crawler.py`)
+   - `pre-test/gemini-naver.py` 기반 Playwright 헤드리스 크롤링
+   - 실제 사용자와 동일한 설정 (cookies, user-agent)
+   - 매물 데이터 파싱 및 JSON 변환 로직
+
+3. **Redis 사용자 데이터 핸들러** (`home/services/redis_handler.py`)
+   - 복합키 패턴: `{user_id}:latest,keyword`, `{user_id}:latest,crawling`
+   - JSON 직렬화/역직렬화 with 일관성 검증
+   - 크롤링 데이터 누적 저장 기능
+
+4. **포괄적 테스트 케이스** (`home/tests/`)
+   - `test_ai_dummy.py`: 더미 클라이언트 패턴 매칭 테스트 (19개 통과)
+   - `test_keyword_extraction.py`: 실제 ChatGPT API 키워드 추출 테스트 (1개 통과)
+   - `test_redis_handler.py`: Redis 직렬화/역직렬화 일관성 테스트 (22개 통과)
+   - **총 42개 테스트 케이스 모두 성공적으로 통과**
+
+### 주요 기술적 특징
+- **로깅 전략**: 복합키 정보는 로그 출력, 실제 데이터는 보안상 비출력
+- **에러 핸들링**: JSON 직렬화 오류 수정 (`TypeError` vs `JSONDecodeError`)
+- **데이터 일관성**: 직렬화 전후 데이터 동일성 검증
+- **헤드리스 최적화**: 실제 브라우저 환경과 동일한 설정으로 감지 회피
+
+---
+
+## 최신 업데이트 (2025-09-17)
+
+### ChatGPT API 상세 조건 구현 완료
+
+**변경된 파일들:**
+1. `home/services/keyword_extraction.py` - ChatGPT API 프롬프트 및 검증 로직 업데이트
+2. `home/services/parsers.py` - 새로운 응답 형식 처리를 위한 변환 로직 추가
+3. `home/tests/test_chatgpt_integration.py` - 새로운 형식에 맞춘 테스트 케이스 업데이트
+
+**구현된 6가지 상세 조건:**
+
+1. **address (필수)**: 최소한 "시·도 + 시·군·구" 형태 구성
+   - 예: "서울시 강남구", "경기도 수원시", "부산시 해운대구"
+   - 시·도만 있고 시·군·구가 없으면 에러 반환
+
+2. **transaction_type (필수)**: 배열 형태로 반환
+   - 4가지 거래 유형: ["매매"], ["전세"], ["월세"], ["단기임대"]
+   - 최소 1개 이상 추출 필수
+
+3. **building_type (필수)**: 배열 형태로 반환
+   - 18가지 건물 유형: 아파트, 오피스텔, 빌라, 아파트분양권, 오피스텔분양권, 재건축, 전원주택, 단독/다가구, 상가주택, 한옥주택, 재개발, 원룸, 상가, 사무실, 공장/창고, 건물, 토지, 지식산업센터
+   - 최소 1개 이상 추출 필수
+
+4. **deposit (선택)**: 정수 배열 또는 null
+   - 형태: [최대값] 또는 [최소값, 최대값]
+   - 예: [50000000], [10000000, 50000000]
+
+5. **monthly_rent (선택)**: 정수 배열 또는 null
+   - 형태: [최대값] 또는 [최소값, 최대값]
+   - 예: [500000], [300000, 800000]
+
+6. **area_range (선택)**: 문자열 또는 null
+   - 8가지 면적 범위: "~10평", "10평대", "20평대", "30평대", "40평대", "50평대", "60평대", "70~"
+
+**주요 개선사항:**
+- **상세 유효성 검증**: 6가지 조건에 맞춘 엄격한 검증 로직 구현
+- **형식 변환 로직**: 새로운 배열 형식을 기존 레거시 형식으로 변환하는 호환성 레이어 추가
+- **포괄적 문서화**: 모든 조건과 JSON 예시를 주석으로 개발자 참고용 제공
+- **테스트 검증 완료**: 업데이트된 테스트 케이스로 실제 ChatGPT API 호출 검증 (PASSED)
+
+**테스트 결과:**
+- ChatGPT API 응답이 정확한 배열 형식으로 반환됨 확인
+- 파서가 새로운 형식을 기존 시스템과 호환되도록 변환함 확인
+- 로그 출력 형식이 POC와 일치함 확인
+
+---
+
+## 최신 업데이트 (2025-09-17) - 간소화된 키워드 추출 플로우
+
+### ChatGPT API 직접 사용으로 플로우 간소화 완료
+
+**변경된 파일들:**
+1. `home/services/keyword_extraction.py` - 불필요한 변환 로직 제거, ChatGPT 응답 직접 반환
+2. `home/views/__init__.py` - KeywordParser 사용 제거, ChatGPT 응답 직접 활용
+3. `home/tests/test_chatgpt_integration.py` - 간소화된 플로우에 맞춘 테스트 케이스 업데이트
+
+**주요 변경사항:**
+
+**1. 기존 플로우 (제거됨):**
+```
+자연어 쿼리 → ChatGPT API → raw_keywords → KeywordParser.parse() → parsed_keywords
+```
+
+**2. 새로운 간소화된 플로우:**
+```
+자연어 쿼리 → ChatGPT API → extracted_keywords (최종 결과)
+```
+
+**3. 구체적 개선점:**
+- **불필요한 변환 제거**: KeywordParser의 legacy 변환 로직 제거
+- **직접적인 API 활용**: ChatGPT 응답을 바로 최종 결과로 사용
+- **단순화된 워크플로우**: SearchAPIView에서 Step 2 (파싱) 단계 제거
+- **일관된 데이터 형식**: ChatGPT가 반환하는 배열 형식을 그대로 활용
+
+**4. 테스트 결과:**
+- 간소화된 테스트 케이스 실행 성공 (PASSED)
+- ChatGPT API 응답 형식 검증 완료
+- 로그 출력에서 불필요한 변환 과정 제거 확인
+
+**5. 성능 향상:**
+- 키워드 추출 과정에서 중간 변환 단계 제거로 처리 속도 향상
+- 메모리 사용량 감소 (중간 변환 객체 불필요)
+- 코드 복잡성 감소로 유지보수성 향상
+
+이제 ChatGPT API로부터 반환받은 JSON이 바로 최종 추출 결과로 사용되며, 이후 추가적인 파싱이나 변환 작업은 수행되지 않습니다.
+
+---
+
+## 최신 업데이트 (2025-09-17) - 보증금/월세 최소/최대값 제한
+
+### ChatGPT API 보증금/월세 배열 최적화 완료
+
+**변경된 파일:**
+- `home/services/keyword_extraction.py` - 보증금/월세 최소/최대값 제한 및 검증 로직 추가
+
+**주요 개선사항:**
+
+**1. 보증금(deposit) 배열 제한:**
+- 여러 개의 값이 추출된 경우, 반드시 최소값과 최대값만 반환
+- 형태: `[최대값]` 또는 `[최소값, 최대값]`
+- 예: `[50000000]` (5천만원 이하), `[10000000, 50000000]` (1천만원~5천만원)
+
+**2. 월세(monthly_rent) 배열 제한:**
+- 여러 개의 값이 추출된 경우, 반드시 최소값과 최대값만 반환
+- 형태: `[최대값]` 또는 `[최소값, 최대값]`
+- 예: `[500000]` (50만원 이하), `[300000, 800000]` (30만원~80만원)
+
+**3. 검증 로직 강화:**
+- 배열 요소 개수 제한: 최대 2개 (1개 또는 2개만 허용)
+- 2개 요소인 경우 순서 검증: 첫 번째 값(최소값) ≤ 두 번째 값(최대값)
+- 모든 값은 0 이상의 정수여야 함
+
+**4. ChatGPT 프롬프트 업데이트:**
+```
+중요: deposit과 monthly_rent는 배열에 최대 2개 요소만 허용됩니다.
+- 단일 값: [최대값] 형태로 반환
+- 범위 값: [최소값, 최대값] 형태로 반환
+- 여러 개의 값이 추출된 경우, 반드시 최소값과 최대값만 선별하여 반환하세요.
+```
+
+**5. 테스트 결과:**
+- 업데이트된 검증 로직으로 테스트 통과 (PASSED)
+- ChatGPT API가 새로운 제한사항을 준수하여 응답 반환 확인
+
+이 업데이트로 ChatGPT API는 보증금과 월세 항목에서 불필요한 중간값들을 제거하고, 핵심적인 최소값과 최대값만 반환하게 됩니다.
+
+---
+
+## 최신 업데이트 (2025-09-17) - 면적 범위 공백 처리 버그 수정
+
+### area_range 값 공백 처리 표준화 완료
+
+**변경된 파일들:**
+1. `home/services/keyword_extraction.py` - ChatGPT 프롬프트 및 검증 로직의 area_range 값 수정
+2. `home/services/parsers.py` - area_range 파싱 정규식 공백 처리 개선
+3. `home/tests/test_chatgpt_integration.py` - area_range 공백 검증 테스트 추가
+
+**주요 변경사항:**
+
+**1. 공백 표준화:**
+- **기존:** `"~10평"`, `"70~"` (공백 없음)
+- **수정됨:** `"~ 10평"`, `"70평 ~"` (물결표 앞뒤 공백 추가)
+
+**2. ChatGPT 프롬프트 업데이트:**
+```
+"area_range": "~ 10평|10평대|20평대|30평대|40평대|50평대|60평대|70평 ~" 중 하나 또는 null
+```
+
+**3. 검증 로직 개선:**
+- 유효한 area_range 값: `['~ 10평', '10평대', '20평대', '30평대', '40평대', '50평대', '60평대', '70평 ~']`
+- 공백을 포함한 올바른 형식만 허용
+
+**4. 파싱 정규식 개선:**
+```python
+# "~ 10평" -> 10
+match = re.search(r'~\s*(\d+)평', area_range)
+
+# "70평 ~" -> 70
+match = re.search(r'(\d+)평?\s*~', area_range)
+```
+
+**5. 테스트 검증:**
+- `test_chatgpt_area_range_spacing` 테스트 추가
+- ChatGPT API가 "~ 10평 ~" 형태로 올바른 공백 포함하여 응답 반환 확인 (PASSED)
+
+**결과:**
+이제 ChatGPT API는 면적 범위를 나타낼 때 일관되게 공백을 포함한 표준화된 형식으로 반환합니다:
+- 10평 이하: `"~ 10평"`
+- 70평 이상: `"70평 ~"`
+- 특정 평수대: `"30평대"` (기존과 동일)

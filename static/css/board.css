@@ -1,0 +1,102 @@
+/* board.css */
+
+/* General styling for the results page */
+.container {
+    max-width: 1200px;
+}
+
+h2 {
+    color: #343a40;
+    font-weight: 600;
+}
+
+/* Alert for search query/keywords */
+.alert-info {
+    background-color: #e0f7fa;
+    border-color: #b2ebf2;
+    color: #006064;
+}
+
+/* Property Card Styling */
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-bottom: 1px solid #eee;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #343a40;
+    margin-bottom: 0.75rem;
+}
+
+.card-text {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+.card-text strong {
+    color: #333;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.6em;
+    border-radius: 0.3rem;
+}
+
+.card-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #eee;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* Pagination Styling */
+.pagination .page-item .page-link {
+    color: #007bff;
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.pagination .page-item .page-link:hover {
+    background-color: #e9ecef;
+    color: #0056b3;
+}
+
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:last-child .page-link {
+    border-radius: 0.5rem;
+}
+
+/* No results message */
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+}
