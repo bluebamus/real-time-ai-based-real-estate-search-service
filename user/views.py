@@ -41,8 +41,8 @@ class CustomLoginView(LoginView):
     redirect_authenticated_user = True
 
     def get_success_url(self):
-        """로그인 성공시 사용자 정보 수정 페이지로 이동 (임시)"""
-        return reverse_lazy('user:update')
+        """로그인 성공시 홈페이지로 이동"""
+        return reverse_lazy('home:home')
 
     def form_valid(self, form):
         """로그인 성공시 환영 메시지 출력"""

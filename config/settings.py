@@ -140,7 +140,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    str(BASE_DIR / "static"), # Changed to string conversion
 ]
 
 # Media files (User-uploaded files)
