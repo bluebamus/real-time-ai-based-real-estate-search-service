@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI 부동산 검색{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="search-container text-center p-4 border rounded shadow-sm">
+                <div class="search-guide mb-4">
+                    <h3>자연어로 부동산을 검색해보세요</h3>
+                    <p class="text-muted">예시: "서울시 강남구 30평대 아파트 매매 5억 이하"</p>
+                </div>
+                <div class="search-input-group d-flex">
+                    <input type="text" id="nlp-search" class="form-control form-control-lg" placeholder="원하는 조건을 자연어로 입력하세요">
+                    <button id="search-btn" class="btn btn-primary btn-lg ms-2">검색</button>
+                </div>
+                <div id="loading-spinner" class="mt-3" style="display:none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">검색 결과를 준비 중입니다...</p>
+                </div>
+                <div id="error-message" class="mt-3 text-danger" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %} {# This block is correctly defined in base.html #}
+    <script src="{% static 'js/home.js' %}"></script>
+{% endblock %}

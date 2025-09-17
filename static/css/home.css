@@ -1,0 +1,50 @@
+.search-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.search-guide h3 {
+    color: #343a40;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.search-guide p {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.search-input-group .form-control {
+    border-radius: 0.5rem;
+    border-color: #ced4da;
+}
+
+.search-input-group .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.search-input-group .btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+}
+
+#loading-spinner {
+    margin-top: 20px;
+}
+
+#loading-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+#loading-spinner p {
+    color: #007bff;
+    font-weight: 500;
+}
+
+#error-message {
+    font-weight: 500;
+}
