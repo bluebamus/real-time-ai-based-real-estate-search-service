@@ -19,11 +19,16 @@ Board App은 다음 핵심 기능을 담당합니다:
 
 ### 1. Utils 클래스 연동
 
-- [ ] **Redis 캐시 연동**: `utils.cache.RedisCache` 사용
-  - Redis 연결 관리
-  - 검색 결과 캐시 조회
-  - 추천 매물 캐시 조회
-  - TTL 관리 및 키 생성
+- [x] **Redis 검색 결과 조회**: Home에서 생성된 Redis 키로 데이터 조회
+  - Redis 키 형태: `search:{hash}:results`
+  - TTL 5분 내 유효한 데이터 조회
+  - JSON 역직렬화를 통한 매물 리스트 변환
+  - 데이터 없음/만료 시 적절한 오류 처리
+
+- [x] **추천 매물 Redis 연동**: `utils.recommendations.RecommendationEngine` 사용
+  - Redis Sorted Sets에서 추천 매물 조회
+  - 스코어 기반 상위 10개 추천 매물 표시
+  - TTL 1시간 내 유효한 추천 데이터 조회
 
 - [ ] **데이터 파싱**: `utils.parsers.DataParser` 클래스 구현
   ```python
@@ -44,9 +49,11 @@ Board App은 다음 핵심 기능을 담당합니다:
 ### 2. 뷰 구현
 
 #### 2.1 메인 뷰
-- [ ] **PropertyListView**: 매물 목록 표시
-  - Redis 키 기반 데이터 조회
-  - 추천 매물 20개 + 검색 결과 30개 표시
+- [x] **PropertyListView**: 매물 목록 표시
+  - Home에서 전달받은 Redis 키로 검색 결과 조회
+  - 추천 매물 상위 10개 우선 표시 ("추천" 배지)
+  - 일반 검색 결과 30개 표시 (추천 매물 제외)
+  - Flex 반응형 카드 레이아웃 구현
   - 페이지네이션 구현
 
 - [ ] **PropertyDetailView**: 매물 상세 정보
@@ -54,14 +61,15 @@ Board App은 다음 핵심 기능을 담당합니다:
   - 관련 매물 추천
 
 #### 2.2 API 뷰
-- [ ] **ResultsAPIView**: 검색 결과 API
-  - Redis 키 기반 데이터 반환
-  - 페이지네이션 지원
-  - JSON 응답
+- [x] **ResultsAPIView**: 검색 결과 API
+  - Redis 키 파라미터로 데이터 조회
+  - 페이지네이션 지원 (30개씩)
+  - JSON 응답 (추천 매물 제외)
 
-- [ ] **RecommendationAPIView**: 추천 매물 API
-  - 사용자별 추천 매물 조회
-  - 전체 사용자 기반 추천 매물 조회
+- [x] **RecommendationAPIView**: 추천 매물 API
+  - Redis Sorted Sets에서 상위 10개 추천 매물 조회
+  - 스코어 기반 정렬된 매물 데이터 반환
+  - JSON 응답 (is_recommendation: true 플래그)
 
 ### 3. 추천 시스템 연동
 
@@ -91,11 +99,12 @@ Board App은 다음 핵심 기능을 담당합니다:
 
 ### 5. 템플릿 구현
 
-- [ ] **results.html**: 메인 결과 페이지
-  - Bootstrap 5 카드 디자인
-  - 반응형 그리드 레이아웃
-  - 추천 매물 섹션 (20개)
-  - 검색 결과 섹션 (30개)
+- [x] **results.html**: 메인 결과 페이지
+  - Bootstrap 5 Flex 반응형 카드 디자인
+  - 추천 매물 섹션 (상위 10개, "추천" 배지)
+  - 일반 검색 결과 섹션 (30개, 추천 매물 제외)
+  - 카드 간 동일한 높이 유지 (flex-fill 활용)
+  - 반응형 그리드 레이아웃 (md: 3열, sm: 2열, xs: 1열)
 
 - [ ] **property_card.html**: 매물 카드 컴포넌트
   ```html
@@ -273,18 +282,18 @@ uv run celery -A config beat -l info
 
 ### Redis 키 구조
 ```
-# 검색 결과 (TTL: 5분)
-search:{hash}:results -> List of property data
+# 검색 결과 (TTL: 5분) - Home에서 생성
+search:{hash}:results -> List of property data (JSON 직렬화)
 
-# 사용자별 추천 (TTL 없음, 수동 갱신)
-user:{user_id}:recommendations -> List of recommended properties
+# 추천 매물 (TTL: 1시간) - 추천 시스템에서 생성
+recommendations:top_properties -> Sorted Set (score: property_id)
 
-# 전체 사용자 추천 (TTL 없음, 수동 갱신)
-global:recommendations -> List of popular properties
-
-# 키워드 스코어 (Sorted Sets)
+# 키워드 스코어 (Sorted Sets, TTL: 1시간)
 user:{user_id}:keywords:{category} -> {keyword: score}
 global:keywords:{category} -> {keyword: score}
+
+# 추천 매물 상세 데이터 (TTL: 1시간)
+property:{property_id}:details -> JSON property data
 ```
 
 ### 매물 데이터 구조 (실제 크롤링 결과 기반)
@@ -322,25 +331,25 @@ COLUMN_MAPPING = {
 
 ## 구현 우선순위
 
-### Phase 1: 기본 결과 표시
-1. Redis 데이터 조회 및 파싱
-2. 기본 뷰 및 템플릿 구현
-3. 매물 카드 UI 구현
+### Phase 1: Redis 연동 및 기본 결과 표시
+1. Home에서 생성된 Redis 키로 검색 결과 조회
+2. JSON 역직렬화 및 매물 데이터 파싱
+3. 기본 뷰 및 Bootstrap 5 Flex 카드 UI 구현
 
-### Phase 2: 추천 시스템
-1. 추천 엔진 구현
-2. Redis Sorted Sets 활용
-3. 추천 매물 표시
+### Phase 2: 추천 시스템 연동
+1. Redis Sorted Sets에서 추천 매물 조회
+2. 스코어 기반 상위 10개 추천 매물 표시
+3. "추천" 배지 및 우선 표시 기능
 
-### Phase 3: 페이지네이션 및 자동화
-1. 커스텀 페이지네이션 구현
-2. AJAX 페이지 로딩
-3. Celery Beat 자동 갱신
+### Phase 3: 페이지네이션 및 AJAX
+1. 커스텀 페이지네이션 구현 (30개씩)
+2. AJAX 기반 비동기 페이지 로딩
+3. 브라우저 히스토리 관리
 
 ### Phase 4: 최적화 및 테스트
-1. 성능 최적화
-2. 테스트 케이스 작성
-3. 통합 테스트
+1. Flex 레이아웃 성능 최적화
+2. Redis 조회 캐싱 최적화
+3. 추천 시스템 연동 테스트
 
 ---
 

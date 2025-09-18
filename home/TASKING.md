@@ -57,13 +57,15 @@ Home App은 다음 핵심 기능을 담당합니다:
   - 로그인 상태 확인
 
 #### 3.2 API 뷰
-- [] **SearchAPIView**: 자연어 검색 처리 API
+- [x] **SearchAPIView**: 자연어 검색 처리 API
   - POST 메서드
   - 로그인 필수 (`@login_required`)
   - ChatGPT API 호출
   - 키워드 추출 및 검증
   - 크롤링 작업 트리거
-  - Redis 키 반환
+  - 크롤링 결과를 Redis에 직렬화 저장 (TTL: 5분)
+  - Redis 키 (`search:{hash}:results`) JSON 응답으로 반환
+  - 추천 시스템 키워드 스코어 업데이트
 
 ### 4. Utils 클래스 연동
 
@@ -114,10 +116,17 @@ Home App은 다음 핵심 기능을 담당합니다:
   - 키워드 기반 Redis 키 생성
   - 캐시 조회 및 저장 로직
 
-- [ ] **추천 시스템 연동**: `utils.recommendations.RecommendationEngine` 사용
-  - Redis Sorted Sets 활용
+- [x] **크롤링 결과 Redis 저장 시스템**: 새로운 Redis 저장 구조 구현
+  - 크롤링 완료 후 JSON 직렬화하여 Redis 저장 (TTL: 5분)
+  - Redis 키 생성: `search:{hash}:results` 형태
+  - 저장 데이터: 크롤링된 매물 리스트 (영문 컬럼명 적용)
+  - API 응답: JSON 형태로 Redis 키 반환
+
+- [x] **추천 시스템 연동**: `utils.recommendations.RecommendationEngine` 사용
+  - Redis Sorted Sets 활용 (TTL: 1시간)
   - 사용자별 키워드 스코어 업데이트
   - 전체 사용자 키워드 스코어 업데이트
+  - 키워드 스코어 기반 추천 매물 조회
   - **Redis 장애 대비**: Database 백업 시스템 연동
 
 ---
@@ -242,10 +251,20 @@ EXTRACT_PROMPT = """
   - HomeView 접근 테스트
   - SearchAPIView 테스트 (실제 ChatGPT API 사용)
 
+- [ ] **test_redis_storage.py**: Redis 저장 시스템 테스트
+  - 크롤링 결과 Redis 직렬화/역직렬화 테스트
+  - TTL 5분 설정 확인
+  - 키 생성 로직 검증 (`search:{hash}:results`)
+
 #### 8.2 통합 테스트
 - [ ] **test_search_flow.py**: 전체 검색 플로우 테스트
-  - 자연어 입력 → ChatGPTClient → KeywordParser → NaverRealEstateCrawler → RedisCache
-  - Utils 클래스 간 연동 테스트
+  - 자연어 입력 → ChatGPTClient → NaverRealEstateCrawler → Redis 저장 → Board 연동
+  - 추천 시스템 스코어 업데이트 플로우 테스트
+
+- [ ] **test_recommendation_system.py**: 추천 시스템 테스트
+  - Redis Sorted Sets 키워드 스코어 저장/조회
+  - TTL 1시간 설정 확인
+  - 사용자별/전체 추천 매물 조회
 
 ## 토큰 절약 최적화 방법
 

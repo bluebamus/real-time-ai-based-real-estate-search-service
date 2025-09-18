@@ -11,6 +11,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from home.models import SearchHistory, Property # Changed relative import to absolute
 from home.services.keyword_extraction import ChatGPTKeywordExtractor
 from home.services.crawlers import NaverRealEstateCrawler
+from home.services.redis_storage import redis_storage
+from utils.recommendations import recommendation_engine
 
 logger = logging.getLogger(__name__)
 
@@ -66,44 +68,33 @@ class SearchAPIView(APIView):
             print(f"Step 3 Complete: Crawled {len(crawled_properties_data)} properties.")
             logger.info(f"Crawled {len(crawled_properties_data)} properties.")
 
-            print("Step 4: Saving search history...")
-            # 4. 검색 기록 저장
+            print("Step 4: Storing crawling results in Redis...")
+            # 4. 크롤링 결과를 Redis에 저장 (TTL: 5분)
+            redis_key = redis_storage.store_crawling_results(extracted_keywords, crawled_properties_data)
+            print(f"Step 4 Complete: Crawling results stored in Redis: {redis_key}")
+            logger.info(f"Crawling results stored in Redis: {redis_key}")
+
+            print("Step 5: Updating recommendation system keyword scores...")
+            # 5. 추천 시스템 키워드 스코어 업데이트
+            if recommendation_engine:
+                # 사용자별 키워드 스코어 업데이트
+                recommendation_engine.update_user_keyword_scores(user.id, extracted_keywords)
+                # 전체 사용자 키워드 스코어 업데이트
+                recommendation_engine.update_global_keyword_scores(extracted_keywords)
+                print("Step 5 Complete: Recommendation system keyword scores updated.")
+                logger.info("Recommendation system keyword scores updated.")
+
+            print("Step 6: Saving search history...")
+            # 6. 검색 기록 저장 (Redis 키 포함)
             search_history = SearchHistory.objects.create(
                 user=user,
                 query_text=query_text,
                 parsed_keywords=extracted_keywords,  # ChatGPT 응답 직접 저장
                 result_count=len(crawled_properties_data),
-                redis_key="" # Redis caching is excluded for now
+                redis_key=redis_key  # Redis 키 저장
             )
-            print(f"Step 4 Complete: Search history saved: {search_history.search_id}")
+            print(f"Step 6 Complete: Search history saved: {search_history.search_id}")
             logger.info(f"Search history saved: {search_history.search_id}")
-
-            print("Step 5: Saving crawled properties to database...")
-            # 5. 크롤링된 데이터를 Property 모델에 저장 (또는 업데이트)
-            saved_properties = []
-            for prop_data in crawled_properties_data:
-                try:
-                    property_obj = Property.objects.create(
-                        address=prop_data.get('address'),
-                        owner_type=prop_data.get('owner_type'),
-                        transaction_type=prop_data.get('transaction_type'),
-                        price=prop_data.get('price'),
-                        building_type=prop_data.get('building_type'),
-                        area_pyeong=prop_data.get('area_pyeong'),
-                        floor_info=prop_data.get('floor_info'),
-                        direction=prop_data.get('direction'),
-                        tags=prop_data.get('tags'),
-                        updated_date=prop_data.get('updated_date'),
-                        detail_url=prop_data.get('detail_url'),
-                        image_urls=prop_data.get('image_urls'),
-                        description=prop_data.get('description')
-                    )
-                    saved_properties.append(property_obj.property_id)
-                except Exception as e:
-                    print(f"Error saving property: {e} - Data: {prop_data}")
-                    logger.error(f"Error saving property: {e} - Data: {prop_data}")
-                    continue
-            print(f"Step 5 Complete: Saved {len(saved_properties)} properties.")
 
 
             print("--- SearchAPIView: POST request complete ---")
@@ -114,8 +105,8 @@ class SearchAPIView(APIView):
                     "query": query_text,
                     "extracted_keywords": extracted_keywords,  # ChatGPT 응답 직접 반환
                     "result_count": len(crawled_properties_data),
-                    "saved_property_ids": saved_properties,
-                    "redirect_url": f"/board/results/?search_history_id={search_history.search_id}" # Example redirect
+                    "redis_key": redis_key,  # Board 앱에서 사용할 Redis 키
+                    "redirect_url": f"/board/results/{redis_key}/" # Redis 키를 URL에 포함
                 },
                 status=status.HTTP_200_OK
             )

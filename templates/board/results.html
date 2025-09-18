@@ -4,85 +4,167 @@
 {% block title %}검색 결과 - AI 부동산 검색{% endblock %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'css/board.css' %}"> {# Optional: for board-specific styling #}
+    <link rel="stylesheet" href="{% static 'css/board.css' %}">
+    <style>
+        .property-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        .property-card:hover {
+            transform: translateY(-5px);
+        }
+        .recommendation-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+        }
+        .card-container {
+            position: relative;
+        }
+        .price-text {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #007bff;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="mb-4 text-center">부동산 검색 결과</h2>
+<div class="container-fluid mt-4">
+    <h2 class="mb-4 text-center">🏠 부동산 검색 결과</h2>
 
-    {% if search_history %}
-        <div class="alert alert-info text-center" role="alert">
-            <strong>검색어:</strong> {{ search_history.query_text }}
+    {% if error %}
+        <div class="alert alert-danger text-center" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> {{ error }}
             <br>
-            <strong>추출된 키워드:</strong> {{ search_history.parsed_keywords }}
+            <a href="{% url 'home:home' %}" class="btn btn-primary mt-2">새로 검색하기</a>
         </div>
-    {% endif %}
-
-    {% if properties %}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-            {% for property in properties %}
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    {% if property.image_urls %}
-                        <img src="{{ property.image_urls.0 }}" class="card-img-top" alt="Property Image">
-                    {% else %}
-                        <img src="{% static 'img/default_property.png' %}" class="card-img-top" alt="Default Image">
-                    {% endif %}
-                    <div class="card-body">
-                        <h5 class="card-title">{{ property.address }}</h5>
-                        <p class="card-text">
-                            <strong>거래:</strong> {{ property.transaction_type }}<br>
-                            <strong>가격:</strong> {{ property.price|floatformat:"0" }}원<br>
-                            <strong>유형:</strong> {{ property.building_type }}<br>
-                            <strong>평수:</strong> {{ property.area_pyeong }}평<br>
-                            <strong>층:</strong> {{ property.floor_info }}<br>
-                            <strong>방향:</strong> {{ property.direction }}<br>
-                            {% if property.tags %}
-                                <strong>태그:</strong>
-                                {% for tag in property.tags %}
-                                    <span class="badge bg-secondary me-1">{{ tag }}</span>
-                                {% endfor %}
-                                <br>
-                            {% endif %}
-                            <strong>갱신일:</strong> {{ property.updated_date|date:"Y-m-d" }}
-                        </p>
-                        {% if property.detail_url %}
-                            <a href="{{ property.detail_url }}" class="btn btn-primary btn-sm" target="_blank">상세보기</a>
-                        {% endif %}
-                    </div>
-                    <div class="card-footer text-muted">
-                        <small>크롤링 일시: {{ property.crawled_date|date:"Y-m-d H:i" }}</small>
+    {% else %}
+        <!-- 추천 매물 섹션 -->
+        {% if recommendations %}
+        <div class="mb-5">
+            <h3 class="mb-3">
+                <i class="fas fa-star text-warning"></i> 추천 매물
+                <span class="badge bg-primary">{{ total_recommendations }}개</span>
+            </h3>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for property in recommendations %}
+                <div class="col">
+                    <div class="card-container">
+                        <span class="badge bg-warning recommendation-badge">
+                            <i class="fas fa-star"></i> 추천
+                        </span>
+                        <div class="card property-card h-100 shadow-sm border-warning">
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title text-truncate">{{ property.owner_name|default:"매물" }}</h6>
+                                <p class="card-text small flex-fill">
+                                    <strong>📍 주소:</strong> {{ property.address|default:"정보 없음" }}<br>
+                                    <strong>🏠 거래:</strong> {{ property.transaction_type|default:"정보 없음" }}<br>
+                                    <span class="price-text">💰 가격: {{ property.price|default:"정보 없음" }}원</span><br>
+                                    <strong>🏢 유형:</strong> {{ property.building_type|default:"정보 없음" }}<br>
+                                    <strong>📐 평수:</strong> {{ property.area_size|default:"정보 없음" }}평<br>
+                                    <strong>🏗️ 층수:</strong> {{ property.floor_info|default:"정보 없음" }}<br>
+                                    <strong>🧭 방향:</strong> {{ property.direction|default:"정보 없음" }}
+                                </p>
+                                {% if property.tags %}
+                                <div class="mb-2">
+                                    {% for tag in property.tags %}
+                                        <span class="badge bg-secondary me-1 small">{{ tag }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted mt-auto">📅 {{ property.updated_date|default:"정보 없음" }}</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        {# Pagination controls #}
-        <nav aria-label="Page navigation" class="mt-4">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&search_history_id={{ search_history.id }}">이전</a></li>
-                {% endif %}
-
-                {% for i in paginator.page_range %}
-                    {% if page_obj.number == i %}
-                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                    {% else %}
-                        <li class="page-item"><a class="page-link" href="?page={{ i }}&search_history_id={{ search_history.id }}">{{ i }}</a></li>
-                    {% endif %}
                 {% endfor %}
-
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&search_history_id={{ search_history.id }}">다음</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    {% else %}
-        <div class="alert alert-warning text-center" role="alert">
-            검색 결과가 없습니다. 다른 검색어를 시도해보세요.
+            </div>
         </div>
+        {% endif %}
+
+        <!-- 일반 검색 결과 섹션 -->
+        {% if search_results %}
+        <div class="mb-5">
+            <h3 class="mb-3">
+                <i class="fas fa-search"></i> 검색 결과
+                <span class="badge bg-secondary">{{ total_search_results }}개</span>
+            </h3>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for property in search_results %}
+                <div class="col">
+                    <div class="card property-card h-100 shadow-sm">
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title text-truncate">{{ property.owner_name|default:"매물" }}</h6>
+                            <p class="card-text small flex-fill">
+                                <strong>📍 주소:</strong> {{ property.address|default:"정보 없음" }}<br>
+                                <strong>🏠 거래:</strong> {{ property.transaction_type|default:"정보 없음" }}<br>
+                                <span class="price-text">💰 가격: {{ property.price|default:"정보 없음" }}원</span><br>
+                                <strong>🏢 유형:</strong> {{ property.building_type|default:"정보 없음" }}<br>
+                                <strong>📐 평수:</strong> {{ property.area_size|default:"정보 없음" }}평<br>
+                                <strong>🏗️ 층수:</strong> {{ property.floor_info|default:"정보 없음" }}<br>
+                                <strong>🧭 방향:</strong> {{ property.direction|default:"정보 없음" }}
+                            </p>
+                            {% if property.tags %}
+                            <div class="mb-2">
+                                {% for tag in property.tags %}
+                                    <span class="badge bg-info me-1 small">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="text-muted mt-auto">📅 {{ property.updated_date|default:"정보 없음" }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not recommendations and not search_results %}
+        <div class="alert alert-warning text-center" role="alert">
+            <i class="fas fa-search"></i> 검색 결과가 없습니다. 다른 검색어를 시도해보세요.
+            <br>
+            <a href="{% url 'home:home' %}" class="btn btn-primary mt-2">새로 검색하기</a>
+        </div>
+        {% endif %}
+
+        <!-- 추가 로딩을 위한 AJAX 구현 영역 (향후 구현) -->
+        <div id="loading-more" class="text-center mt-4" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">더 많은 결과를 불러오는 중...</p>
+        </div>
+
+        {% if redis_key %}
+        <div class="text-center mt-4">
+            <a href="{% url 'home:home' %}" class="btn btn-outline-primary">
+                <i class="fas fa-search"></i> 새로 검색하기
+            </a>
+        </div>
+        {% endif %}
     {% endif %}
 </div>
+
+<script>
+// 향후 AJAX 페이지네이션 구현을 위한 기본 스크립트
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Board results page loaded');
+    console.log('Recommendations:', {{ total_recommendations|default:0 }});
+    console.log('Search results:', {{ total_search_results|default:0 }});
+
+    // 카드 호버 효과 개선
+    const cards = document.querySelectorAll('.property-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.boxShadow = '0 8px 25px rgba(0,123,255,0.15)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
 {% endblock %}

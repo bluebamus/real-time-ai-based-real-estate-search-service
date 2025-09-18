@@ -1,7 +1,7 @@
 """
-네이버 부동산 크롤링 모듈 (pre-test/gemini-naver.py 기반)
+네이버 부동산 크롤링 모듈 (pre-test/crawlers-naver-with-search-opt-headless.py 기반)
 
-검증된 POC 코드를 Django 환경에 맞게 수정한 헤드리스 크롤링 구현
+POC 검증된 헤드리스 크롤링 구현 - 탐지 방지 및 검색 옵션 설정 기능 포함
 """
 
 import json
@@ -17,13 +17,14 @@ logger = logging.getLogger(__name__)
 
 class NaverRealEstateCrawler:
     """
-    네이버 부동산 크롤링 클래스 (pre-test/gemini-naver.py 기반)
+    네이버 부동산 크롤링 클래스 (POC 완전 동기화)
     헤드리스 Firefox 브라우저를 사용하여 네이버 부동산 크롤링
+    탐지 방지 및 검색 옵션 설정 기능 포함
     """
 
     def __init__(self, headless: bool = True):
         """크롤러 초기화"""
-        logger.info("[CRAWLER] 네이버 부동산 크롤러 초기화")
+        logger.info("[CRAWLER] 네이버 부동산 크롤러 초기화 (POC 동기화)")
 
         self.playwright = None
         self.browser: Browser = None
@@ -31,7 +32,7 @@ class NaverRealEstateCrawler:
         self.page: Page = None
         self.headless = headless
 
-        # 네이버 인증 쿠키 (pre-test/gemini-naver.py에서 복사)
+        # 네이버 인증 쿠키 (POC에서 검증됨)
         self.user_cookies = {
             "NNB": "3C7PYUFWZWUGI",
             "NAC": "ua1EBcgqOrsZ",
@@ -48,7 +49,7 @@ class NaverRealEstateCrawler:
 
     def crawl_properties(self, keywords: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        키워드를 기반으로 네이버 부동산 매물 크롤링
+        키워드를 기반으로 네이버 부동산 매물 크롤링 (POC 동기화)
 
         Args:
             keywords: 검색 키워드 딕셔너리
@@ -61,14 +62,20 @@ class NaverRealEstateCrawler:
 
         try:
             # 브라우저 및 페이지 초기화
-            if not self.initialize_browser_and_page():
-                logger.error("[CRAWLER] 브라우저 초기화 실패")
-                return []
+            self.initialize_browser_and_page()
 
             # 검색 수행
-            if not self.perform_search(search_query):
-                logger.error("[CRAWLER] 검색 수행 실패")
-                return []
+            self.perform_search(search_query)
+
+            # 검색 옵션 설정 (POC 기능 추가)
+            self.set_search_options(
+                transaction_type=keywords.get('transaction_type', []),
+                building_type=keywords.get('building_type', []),
+                sale_price=keywords.get('sale_price'),
+                deposit=keywords.get('deposit'),
+                monthly_rent=keywords.get('monthly_rent'),
+                area_range=keywords.get('area_range')
+            )
 
             # 매물 데이터 스크래핑
             properties_data = self.scrape_all_markers_and_extract_data()
@@ -86,12 +93,12 @@ class NaverRealEstateCrawler:
         finally:
             self.close()
 
-    def initialize_browser_and_page(self) -> bool:
+    def initialize_browser_and_page(self):
         """
         Playwright를 시작하고 브라우저와 페이지를 초기화합니다.
-        (pre-test/gemini-naver.py 기반)
+        POC 완전 동기화 - 탐지 방지 설정 강화
         """
-        logger.info("[CRAWLER] Playwright 및 브라우저 초기화를 시작합니다.")
+        logger.info("[CRAWLER] Playwright 및 브라우저 초기화를 시작합니다. (Headless 모드)")
         self.playwright = sync_playwright().start()
 
         cookies_for_playwright = [
@@ -100,125 +107,350 @@ class NaverRealEstateCrawler:
         ]
 
         MAX_RETRIES = 5
-        INITIAL_RETRY_DELAY_SECONDS = 5
+        INITIAL_RETRY_DELAY_SECONDS = 20
         target_url = "https://fin.land.naver.com/search"
 
         for attempt in range(MAX_RETRIES):
             try:
                 if self.browser:
                     self.browser.close()
-                logger.info(f"[CRAWLER] Firefox 브라우저를 시작합니다... (시도 {attempt + 1}/{MAX_RETRIES})")
+                logger.info(f"[CRAWLER] Playwright Firefox 브라우저를 시작합니다... (시도 {attempt + 1}/{MAX_RETRIES})")
 
+                # Headless 모드용 탐지 방지 설정 강화 (POC 완전 복사)
                 self.browser = self.playwright.firefox.launch(
                     headless=self.headless,
                     firefox_user_prefs={
+                        # 웹드라이버 탐지 방지
                         "dom.webdriver.enabled": False,
+                        "useAutomationExtension": False,
                         "media.peerconnection.enabled": False,
+                        # GPU 관련 설정
+                        "webgl.disabled": True,
+                        "media.webrtc.hw.h264.enabled": False,
+                        # 자동화 감지 방지
+                        "general.useragent.override": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
+                        # 개발자 도구 비활성화
+                        "devtools.console.stdout.chrome": False,
+                        "devtools.debugger.remote-enabled": False,
+                        # 플러그인 비활성화
+                        "plugins.testmode": False,
+                        # 네트워크 최적화
+                        "network.http.pipelining": True,
+                        "network.http.proxy.pipelining": True,
+                        "network.http.pipelining.maxrequests": 8,
+                        # 브라우저 fingerprinting 방지
+                        "privacy.resistFingerprinting": True,
+                        "privacy.trackingprotection.enabled": True,
+                        # 캐시 및 히스토리 설정
+                        "browser.cache.disk.enable": False,
+                        "browser.cache.memory.enable": True,
+                        "places.history.enabled": False,
                     },
                 )
 
                 self.context = self.browser.new_context(
+                    # 실제 사용자와 유사한 User-Agent
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
                     viewport={"width": 1920, "height": 1080},
                     locale="ko-KR",
+                    timezone_id="Asia/Seoul",
+                    # 실제 브라우저와 유사한 헤더 설정
                     extra_http_headers={
                         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
                         "Accept-Encoding": "gzip, deflate, br",
                         "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3",
                         "Connection": "keep-alive",
                         "Upgrade-Insecure-Requests": "1",
+                        "Sec-Fetch-Dest": "document",
+                        "Sec-Fetch-Mode": "navigate",
+                        "Sec-Fetch-Site": "none",
+                        "Cache-Control": "max-age=0",
                     },
+                    # 권한 설정
+                    permissions=["geolocation"],
+                    geolocation={"latitude": 37.5665, "longitude": 126.9780},  # 서울 좌표
+                    # JavaScript 활성화
+                    java_script_enabled=True,
                 )
+
+                # 자동화 탐지 방지 스크립트 추가 (POC 완전 복사)
+                self.context.add_init_script("""
+                    // WebDriver 속성 숨기기
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined,
+                    });
+
+                    // Chrome 객체 추가 (Firefox이지만 호환성을 위해)
+                    window.chrome = {
+                        runtime: {},
+                        loadTimes: function() {},
+                        csi: function() {},
+                    };
+
+                    // 플러그인 정보 추가
+                    Object.defineProperty(navigator, 'plugins', {
+                        get: () => [1, 2, 3, 4, 5],
+                    });
+
+                    // 언어 설정
+                    Object.defineProperty(navigator, 'languages', {
+                        get: () => ['ko-KR', 'ko', 'en-US', 'en'],
+                    });
+
+                    // 권한 API 모킹
+                    const originalQuery = window.navigator.permissions.query;
+                    window.navigator.permissions.query = (parameters) => (
+                        parameters.name === 'notifications' ?
+                            Promise.resolve({ state: Notification.permission }) :
+                            originalQuery(parameters)
+                    );
+                """)
 
                 self.context.add_cookies(cookies_for_playwright)
                 self.page = self.context.new_page()
+
+                # 페이지 설정
+                self.page.set_default_navigation_timeout(60000)
+                self.page.set_default_timeout(30000)
+
                 logger.info("[CRAWLER] 브라우저 및 컨텍스트 설정이 완료되었습니다.")
 
                 logger.info(f"[CRAWLER] 초기 URL로 접속합니다: {target_url}")
                 self.page.goto(target_url, wait_until="networkidle", timeout=60000)
                 logger.info("[CRAWLER] 초기 URL 접속 성공.")
-                time.sleep(2)
-                return True
 
-            except Error as e:
-                logger.warning(f"[CRAWLER] URL 접속 중 Playwright 오류 발생: {e}")
+                # URL이 404로 끝나는 경우 재시도
+                if self.page.url.endswith("404"):
+                    raise ValueError(f"URL이 404로 끝납니다: {self.page.url}")
+
+                time.sleep(2)
+                return
+
+            except (Error, ValueError) as e:
+                logger.warning(f"[CRAWLER] URL 접속 중 오류 발생: {e}")
                 if attempt >= MAX_RETRIES - 1:
-                    logger.error("[CRAWLER] 최대 재시도 횟수를 초과하여 브라우저를 초기화하지 못했습니다.")
-                    return False
+                    raise
                 time.sleep(INITIAL_RETRY_DELAY_SECONDS + attempt)
 
-        return False
+        raise Exception("최대 재시도 횟수를 초과하여 브라우저를 초기화하지 못했습니다.")
 
-    def perform_search(self, search_query: str) -> bool:
+    def perform_search(self, search_query: str):
         """
-        네이버 부동산에서 지역 검색 수행
-        (pre-test/gemini-naver.py 기반)
+        네이버 부동산에서 지역 검색 수행 (POC 동기화)
         """
         if not self.page:
-            logger.error("[CRAWLER] 페이지가 초기화되지 않음")
-            return False
+            raise Exception("페이지가 초기화되지 않았습니다. 먼저 initialize_browser_and_page를 호출하세요.")
 
+        logger.info(f"[CRAWLER] '{search_query}'(으)로 검색을 수행합니다.")
+        search_input_locator = self.page.locator("#search")
+        search_input_locator.fill(search_query)
+        time.sleep(2)
+        search_input_locator.press("Enter")
+        self.page.wait_for_load_state("networkidle")
+
+        logger.info(f"[CRAWLER] 검색 결과 목록에서 '{search_query}' 링크를 찾습니다.")
+        result_locator = self.page.get_by_role("link", name=search_query, exact=True).first
+        result_locator.wait_for(state="visible", timeout=10000)
+
+        logger.info(f"[CRAWLER] '{search_query}' 링크를 클릭하여 페이지를 현재 탭에서 이동합니다.")
+        link_href = result_locator.get_attribute("href")
+        if link_href:
+            self.page.goto(link_href, wait_until="networkidle")
+        else:
+            logger.warning("[CRAWLER] 링크의 href 속성을 찾을 수 없어 기존 클릭 방식을 사용합니다.")
+            result_locator.click()
+
+        self.page.wait_for_load_state("networkidle")
+        time.sleep(2)
+
+        logger.info("[CRAWLER] 옵션 설정 페이지로 진입을 시도합니다.")
+
+        # 현재 페이지 URL 로깅
+        current_url = self.page.url
+        logger.info(f"[CRAWLER] 현재 페이지 URL: {current_url}")
+
+        # 옵션 설정 링크 클릭 시도 (강화된 로직)
+        option_clicked = False
+
+        # 시도 1: 기본 선택자
         try:
-            logger.info(f"[CRAWLER] '{search_query}'(으)로 검색을 수행합니다.")
-            search_input_locator = self.page.locator("#search")
-            search_input_locator.fill(search_query)
-            time.sleep(2)
-            search_input_locator.press("Enter")
+            option_link_locator = self.page.locator("a.header_option_add._optionChange").first
+            option_link_locator.wait_for(state="visible", timeout=15000)
+            option_link_locator.click()
+            logger.info("[CRAWLER] 'header_option_add _optionChange' 링크 클릭 성공.")
+            option_clicked = True
+        except Error as e:
+            logger.warning(f"[CRAWLER] 기본 옵션 링크 클릭 실패: {e}")
+
+        # 시도 2: 대체 선택자들
+        if not option_clicked:
+            alternative_selectors = [
+                "a._optionChange",
+                ".header_option_add",
+                "a[class*='option']",
+                "a[href*='option']"
+            ]
+
+            for selector in alternative_selectors:
+                try:
+                    logger.info(f"[CRAWLER] 대체 선택자 시도: {selector}")
+                    alt_locator = self.page.locator(selector).first
+                    alt_locator.wait_for(state="visible", timeout=5000)
+                    alt_locator.click()
+                    logger.info(f"[CRAWLER] 대체 선택자 '{selector}' 클릭 성공.")
+                    option_clicked = True
+                    break
+                except Error as e:
+                    logger.debug(f"[CRAWLER] 대체 선택자 '{selector}' 실패: {e}")
+
+        if option_clicked:
             self.page.wait_for_load_state("networkidle")
+            time.sleep(3)  # 더 긴 대기 시간
+            new_url = self.page.url
+            logger.info(f"[CRAWLER] 옵션 설정 페이지 진입 성공. 새 URL: {new_url}")
+        else:
+            logger.error("[CRAWLER] 모든 옵션 링크 클릭 시도 실패. 페이지 구조가 변경되었을 수 있습니다.")
+            # 현재 페이지의 링크들 확인
+            try:
+                links = self.page.locator("a").all()
+                logger.info(f"[CRAWLER] 현재 페이지의 총 링크 수: {len(links)}")
+                for i, link in enumerate(links[:10]):  # 처음 10개만 로깅
+                    try:
+                        href = link.get_attribute("href")
+                        text = link.inner_text()[:30]  # 처음 30자만
+                        logger.debug(f"[CRAWLER] 링크 {i+1}: href='{href}', text='{text}'")
+                    except:
+                        pass
+            except Exception as e:
+                logger.warning(f"[CRAWLER] 페이지 링크 분석 실패: {e}")
 
-            logger.info(f"[CRAWLER] 검색 결과 목록에서 '{search_query}' 링크를 찾습니다.")
-            result_locator = self.page.get_by_role("link", name=search_query, exact=True).first
-            result_locator.wait_for(state="visible", timeout=10000)
+    def set_search_options(
+        self,
+        transaction_type: List[str],
+        building_type: List[str],
+        sale_price: Optional[List[int]],
+        deposit: Optional[List[int]],
+        monthly_rent: Optional[List[int]],
+        area_range: Optional[str],
+    ):
+        """
+        검색 옵션 설정 (POC 기능 추가)
+        """
+        from home.services.search_options import set_search_options
 
-            logger.info(f"[CRAWLER] '{search_query}' 링크를 클릭하여 페이지를 현재 탭에서 이동합니다.")
-            link_href = result_locator.get_attribute("href")
-            if link_href:
-                self.page.goto(link_href, wait_until="networkidle")
-            else:
-                logger.warning("[CRAWLER] 링크의 href 속성을 찾을 수 없어 기존 클릭 방식을 사용합니다.")
-                result_locator.click()
-
-            self.page.wait_for_load_state("networkidle")
-            time.sleep(2)
-            return True
-
-        except Exception as e:
-            logger.error(f"[CRAWLER] 검색 중 오류 발생: {e}")
-            return False
+        set_search_options(
+            page=self.page,
+            transaction_type=transaction_type,
+            building_type=building_type,
+            sale_price=sale_price,
+            deposit=deposit,
+            monthly_rent=monthly_rent,
+            area_range=area_range,
+        )
 
     def scrape_all_markers_and_extract_data(self) -> List[Dict[str, Any]]:
         """
-        지도 위의 모든 매물 마커를 클릭하여 정보 수집
-        (pre-test/gemini-naver.py 기반)
+        지도 위의 모든 매물 마커를 클릭하여 정보 수집 (POC 강화된 로직)
         """
         if not self.page:
-            logger.error("[CRAWLER] 페이지가 초기화되지 않음")
-            return []
+            raise Exception("페이지가 초기화되지 않았습니다.")
 
         logger.info("[CRAWLER] 지도 위의 모든 매물 마커를 클릭하여 정보 수집을 시작합니다.")
-        try:
-            self.page.wait_for_selector(".marker_circle_count", state="attached", timeout=15000)
-            logger.info("[CRAWLER] 지도 마커('marker_circle_count')가 로드되었습니다.")
-        except Error:
-            logger.error("[CRAWLER] 'marker_circle_count' 클래스를 찾지 못했습니다.")
+
+        # 현재 페이지 상태 확인
+        current_url = self.page.url
+        logger.info(f"[CRAWLER] 마커 찾기 시작 - 현재 URL: {current_url}")
+
+        # 마커 요소 대기 (여러 선택자 시도)
+        marker_found = False
+        marker_selectors = [
+            ".marker_circle_count",
+            ".marker_count",
+            "[class*='marker']",
+            "[class*='circle_count']",
+            ".map_marker",
+            ".cluster_marker"
+        ]
+
+        for selector in marker_selectors:
+            try:
+                logger.info(f"[CRAWLER] 마커 선택자 시도: {selector}")
+                self.page.wait_for_selector(selector, state="attached", timeout=10000)
+                marker_count = self.page.locator(selector).count()
+                if marker_count > 0:
+                    logger.info(f"[CRAWLER] 마커 발견! 선택자: {selector}, 개수: {marker_count}")
+                    marker_found = True
+                    break
+            except Error as e:
+                logger.debug(f"[CRAWLER] 마커 선택자 '{selector}' 실패: {e}")
+
+        if not marker_found:
+            logger.error("[CRAWLER] 모든 마커 선택자로 마커를 찾지 못했습니다.")
+
+            # 페이지 내용 분석
+            try:
+                # 페이지 제목 확인
+                title = self.page.title()
+                logger.info(f"[CRAWLER] 현재 페이지 제목: {title}")
+
+                # 지도 관련 요소 확인
+                map_elements = self.page.locator("[class*='map'], [id*='map'], [class*='marker']").count()
+                logger.info(f"[CRAWLER] 지도 관련 요소 개수: {map_elements}")
+
+                # 주요 클래스들 확인
+                body_classes = self.page.locator("body").get_attribute("class")
+                logger.info(f"[CRAWLER] body 클래스: {body_classes}")
+
+            except Exception as e:
+                logger.warning(f"[CRAWLER] 페이지 분석 실패: {e}")
+
             return []
 
-        marker_spans = self.page.locator(".marker_circle_count").all()
-        total_markers = len(marker_spans)
-        logger.info(f"[CRAWLER] 총 {total_markers}개의 마커 그룹을 발견했습니다.")
+        # 성공한 선택자로 마커 수집
+        successful_selector = None
+        for selector in marker_selectors:
+            try:
+                count = self.page.locator(selector).count()
+                if count > 0:
+                    successful_selector = selector
+                    break
+            except:
+                continue
+
+        if not successful_selector:
+            logger.error("[CRAWLER] 성공한 마커 선택자를 찾을 수 없습니다.")
+            return []
+
+        logger.info(f"[CRAWLER] 사용할 마커 선택자: {successful_selector}")
+
+        marker_spans = self.page.locator(successful_selector).all()
+        logger.info(f"[CRAWLER] 총 {len(marker_spans)}개의 마커 그룹을 발견했습니다.")
 
         all_items_data = []
         processed_articles = set()
 
         for i, marker in enumerate(marker_spans):
             try:
-                logger.info(f"[CRAWLER] 마커 그룹 {i + 1}/{total_markers}을(를) 클릭합니다...")
-                marker.click()
-                self.page.wait_for_load_state("networkidle", timeout=15000)
-                time.sleep(2)  # 데이터가 로드될 시간을 줍니다.
+                logger.info(f"[CRAWLER] 마커 그룹 {i + 1}/{len(marker_spans)}을(를) 클릭합니다...")
+
+                # 마커가 클릭 가능한 상태인지 확인 (POC 강화 로직)
+                try:
+                    marker.wait_for(state="visible", timeout=5000)
+                    marker.scroll_into_view_if_needed()
+                    time.sleep(1)  # 안정화 대기
+
+                    # 강제 클릭 옵션 추가
+                    marker.click(force=True, timeout=10000)
+                    logger.info(f"[CRAWLER] 마커 그룹 {i + 1} 클릭 성공")
+                except Error as click_error:
+                    logger.warning(f"[CRAWLER] 마커 그룹 {i + 1} 클릭 실패, 건너뛰기: {click_error}")
+                    continue
+
+                self.page.wait_for_load_state("networkidle", timeout=20000)
+                time.sleep(2)
 
                 item_elements = self.page.locator(".item_area._Listitem").all()
-                logger.info(f"[CRAWLER] 현재 마커 그룹에서 {len(item_elements)}개의 매물 항목을 찾았습니다.")
+                logger.info(f"[CRAWLER] 현재 마커 그룹에서 {len(item_elements)}개의 매물 항목을 찾았습니다. 데이터 추출을 시작합니다.")
 
                 for item_element in item_elements:
                     try:
@@ -232,7 +464,6 @@ class NaverRealEstateCrawler:
                         else:
                             continue
                     except Error:
-                        logger.debug("[CRAWLER] article_no를 가져올 수 없는 아이템을 건너뜁니다 (광고 가능성).")
                         continue
 
                     extracted_data = self._extract_data_from_item(item_element)
@@ -240,8 +471,18 @@ class NaverRealEstateCrawler:
                         all_items_data.append(extracted_data)
 
             except Error as e:
-                logger.warning(f"[CRAWLER] 마커 그룹 {i + 1} 처리 중 오류 발생: {e}")
+                logger.error(f"[CRAWLER] 마커 그룹 {i + 1} 처리 중 오류 발생: {e}")
+                # 페이지 상태 복구 시도
+                try:
+                    self.page.wait_for_load_state("networkidle", timeout=5000)
+                    time.sleep(2)
+                except Error:
+                    pass
                 continue
+
+        if not all_items_data:
+            logger.warning("[CRAWLER] 수집된 데이터가 없습니다.")
+            return []
 
         logger.info(f"[CRAWLER] 총 {len(all_items_data)}개의 매물 정보를 수집했습니다.")
         return all_items_data
@@ -394,7 +635,7 @@ class NaverRealEstateCrawler:
 
     def convert_to_english_columns(self, raw_data: List[Dict[str, Any]], address_keyword: str) -> List[Dict[str, Any]]:
         """
-        한글 컬럼명 데이터를 영문 컬럼명으로 변환
+        한글 컬럼명 데이터를 영문 컬럼명으로 변환 (Redis 저장용)
         """
         converted_data = []
         for item in raw_data:
@@ -407,11 +648,11 @@ class NaverRealEstateCrawler:
 
             converted_item = {
                 'address': address_keyword,  # 검색 키워드의 주소 사용
-                'owner_type': item.get('집주인', ''),
+                'owner_name': item.get('집주인', ''),  # Redis 저장에 맞춘 필드명
                 'transaction_type': item.get('거래타입', ''),
                 'price': item.get('가격', 0),
                 'building_type': item.get('건물 종류', ''),
-                'area_pyeong': item.get('평수', 0.0),
+                'area_size': item.get('평수', 0.0),  # Redis 저장에 맞춘 필드명
                 'floor_info': item.get('층정보', ''),
                 'direction': item.get('집방향', ''),
                 'tags': tags,
