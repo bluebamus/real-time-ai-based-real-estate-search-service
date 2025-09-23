@@ -4,10 +4,6 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, TemplateView
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.mixins import LoginRequiredMixin
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 
 from home.models import SearchHistory, Property # Import models from home app
 from board.services.redis_data_service import redis_data_service

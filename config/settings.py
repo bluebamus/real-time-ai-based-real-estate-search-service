@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_extensions",
     "rest_framework",
+    "drf_spectacular",
     "corsheaders",
     "django_celery_beat",
     "user",
@@ -167,13 +168,13 @@ LOGOUT_REDIRECT_URL = '/'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 30,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # CORS Settings
@@ -182,6 +183,50 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# DRF Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'AI 부동산 검색 서비스 API',
+    'DESCRIPTION': 'AI 기반 자연어 질의형 부동산 매물 추천 서비스 API 문서',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'COMPONENT_NO_READ_ONLY_REQUIRED': True,
+    'AUTHENTICATION_WHITELIST': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'SECURITY': [
+        {
+            'sessionAuth': []
+        }
+    ],
+    'SERVERS': [
+        {
+            'url': 'http://localhost:8000',
+            'description': '개발 서버'
+        },
+        {
+            'url': 'http://127.0.0.1:8000',
+            'description': '로컬 서버'
+        }
+    ],
+    'TAGS': [
+        {
+            'name': 'home',
+            'description': '홈 앱 - 자연어 검색 및 키워드 추출'
+        },
+        {
+            'name': 'board',
+            'description': '보드 앱 - 검색 결과 및 추천 매물 관리'
+        },
+        {
+            'name': 'auth',
+            'description': '인증 테스트 - 세션 기반 인증 확인'
+        }
+    ],
+    'SCHEMA_PATH_PREFIX': '/api/',
+    'SCHEMA_PATH_PREFIX_TRIM': True,
+}
 
 # Redis Settings
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
@@ -232,3 +277,78 @@ CELERY_BEAT_SCHEDULE = {
 
 # Redis Backup Configuration
 REDIS_BACKUP_TO_DB = os.getenv('REDIS_BACKUP_TO_DB', 'True').lower() == 'true'
+
+# DRF Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'AI 기반 부동산 검색 서비스 API',
+    'DESCRIPTION': '''
+    자연어 기반 부동산 검색 및 추천 시스템 API
+
+    ## 주요 기능
+    - 자연어 검색을 통한 부동산 매물 조회
+    - AI 기반 개인화 추천 시스템
+    - 세션 기반 인증 시스템
+    - Redis 캐시 기반 고속 검색
+
+    ## 인증 방식
+    - 세션 기반 인증 (SessionAuthentication)
+    - CSRF 토큰 필요
+    - credentials: 'include' 설정 필요
+
+    ## 테스트 환경
+    - 개발 서버: http://localhost:8000
+    - API 베이스 URL: http://localhost:8000/api/
+    ''',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'CONTACT': {
+        'name': 'AI 부동산 검색 서비스',
+        'email': 'admin@realestate-ai.com',
+    },
+    'LICENSE': {
+        'name': 'Private License',
+    },
+
+    # API 문서 구성
+    'COMPONENT_SPLIT_REQUEST': True,
+    'COMPONENT_NO_READ_ONLY_REQUIRED': False,
+
+    # 스키마 설정
+    'SCHEMA_PATH_PREFIX': r'/api/',
+    'DEFAULT_GENERATOR_CLASS': 'drf_spectacular.generators.SchemaGenerator',
+
+    # UI 설정
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+
+    # 보안 설정
+    'SERVE_AUTHENTICATION': ['rest_framework.authentication.SessionAuthentication'],
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAuthenticated'],
+
+    # 태그 설정
+    'TAGS': [
+        {
+            'name': 'Home API',
+            'description': '홈 페이지 관련 API - 검색 및 인증 테스트'
+        },
+        {
+            'name': 'Board API',
+            'description': '게시판 관련 API - 결과 조회 및 추천 시스템'
+        },
+        {
+            'name': 'Authentication',
+            'description': '인증 관련 API - 세션 기반 인증 테스트'
+        }
+    ],
+
+    # 예제 설정
+    'ENUM_NAME_OVERRIDES': {
+        'ValidationErrorEnum': 'drf_spectacular.plumbing.ValidationErrorEnum.choices',
+    },
+
+    # 추가 스키마 설정
+    'POSTPROCESSING_HOOKS': [
+        'drf_spectacular.hooks.postprocess_schema_enums'
+    ],
+}

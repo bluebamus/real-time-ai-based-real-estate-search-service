@@ -154,6 +154,79 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Recommendations:', {{ total_recommendations|default:0 }});
     console.log('Search results:', {{ total_search_results|default:0 }});
 
+    // 자동 인증 테스트 실행
+    performBoardAuthTest();
+
+    // CSRF 토큰 가져오기 함수
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Board 인증 테스트 함수
+    async function performBoardAuthTest() {
+        console.log('Starting Board authentication test...');
+        try {
+            const response = await fetch('/board/api/auth-test/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log('=== Board Client Auth Test Result ===');
+                console.log('Status:', data.status);
+                console.log('Is Authenticated:', data.is_authenticated);
+                console.log('Username:', data.username);
+                console.log('User ID:', data.user_id);
+                console.log('Session Exists:', data.session_exists);
+                console.log('Current Path:', data.current_path);
+                console.log('Message:', data.message);
+                console.log('=====================================');
+
+                if (data.is_authenticated) {
+                    console.log('✅ Board 인증 성공: 세션 기반 인증이 정상 작동 중');
+                } else {
+                    console.log('❌ Board 인증 실패: 로그인이 필요합니다');
+                    // Board에서는 리다이렉트하지 않고 로그만 출력
+                }
+            } else {
+                console.error('Board auth test failed:', data);
+            }
+        } catch (error) {
+            console.error('Board auth test error:', error);
+            console.log('❌ Board 인증 테스트 실행 실패: 네트워크 오류 또는 서버 응답 없음');
+        }
+    }
+
+    // 향후 AJAX 요청을 위한 예시 함수 (현재는 사용되지 않음)
+    function makeFetchRequest(url, data) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        });
+    }
+
     // 카드 호버 효과 개선
     const cards = document.querySelectorAll('.property-card');
     cards.forEach(card => {

@@ -1,5 +1,6 @@
 from django.urls import path
-from home.views import HomeView, SearchAPIView # Import specific views directly
+from home.views.base_views import HomeView
+from home.views.api_views import SearchAPIView, AuthTestAPIView
 
 app_name = 'home'
 
@@ -9,4 +10,5 @@ urlpatterns = [
 
     # API endpoints
     path('api/search/', SearchAPIView.as_view(), name='api_search'),
+    path('api/auth-test/', AuthTestAPIView.as_view(), name='api_auth_test'),
 ]

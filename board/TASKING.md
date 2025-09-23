@@ -46,10 +46,17 @@ Board App은 다음 핵심 기능을 담당합니다:
           # 태그 문자열 정리
   ```
 
-### 2. 뷰 구현
+### 2. 뷰 구현 및 구조 개선
+
+#### 2.0 Views 폴더 구조 개선 (2025-09-23 완료)
+- [x] **Views 폴더 구조화**: `board/views/` 폴더 생성
+  - `board/views/__init__.py`: 빈 초기화 파일
+  - `board/views/base_views.py`: 기본 템플릿 뷰들
+  - `board/views/api_views.py`: API 뷰들
+  - 기존 `board/views.py`, `board/api_views.py` 파일 삭제
 
 #### 2.1 메인 뷰
-- [x] **PropertyListView**: 매물 목록 표시
+- [x] **PropertyListView**: 매물 목록 표시 (`board/views/base_views.py`)
   - Home에서 전달받은 Redis 키로 검색 결과 조회
   - 추천 매물 상위 10개 우선 표시 ("추천" 배지)
   - 일반 검색 결과 30개 표시 (추천 매물 제외)
@@ -60,16 +67,28 @@ Board App은 다음 핵심 기능을 담당합니다:
   - 개별 매물 상세 정보 표시
   - 관련 매물 추천
 
-#### 2.2 API 뷰
-- [x] **ResultsAPIView**: 검색 결과 API
+#### 2.2 API 뷰 및 세션 인증 시스템
+- [x] **AuthTestAPIView**: Board 인증 테스트 API (2025-09-23 추가)
+  - 세션 기반 인증 상태 확인
+  - 서버 콘솔에 상세 인증 정보 출력
+  - 클라이언트에 JSON 형태 인증 상태 반환
+  - Board 페이지 방문 시 자동 실행
+
+- [x] **ResultsAPIView**: 검색 결과 API (`board/views/api_views.py`)
   - Redis 키 파라미터로 데이터 조회
   - 페이지네이션 지원 (30개씩)
   - JSON 응답 (추천 매물 제외)
+  - 세션 기반 인증 적용
 
-- [x] **RecommendationAPIView**: 추천 매물 API
+- [x] **RecommendationAPIView**: 추천 매물 API (`board/views/api_views.py`)
   - Redis Sorted Sets에서 상위 10개 추천 매물 조회
   - 스코어 기반 정렬된 매물 데이터 반환
   - JSON 응답 (is_recommendation: true 플래그)
+  - 세션 기반 인증 적용
+
+- [x] **PropertyDetailAPIView**: 매물 상세 정보 API (`board/views/api_views.py`)
+  - 개별 매물 상세 정보 JSON 반환
+  - 세션 기반 인증 적용
 
 ### 3. 추천 시스템 연동
 
@@ -139,7 +158,13 @@ Board App은 다음 핵심 기능을 담당합니다:
   - 이전/다음 버튼
   - 페이지 번호 표시
 
-### 6. JavaScript 구현
+### 6. JavaScript 구현 및 세션 인증 적용
+
+- [x] **세션 기반 인증 JavaScript 적용** (2025-09-23 완료)
+  - `templates/board/results.html` 내 JavaScript 수정
+  - CSRF 토큰 및 `credentials: 'include'` 설정 추가
+  - Board 페이지 방문 시 자동 인증 테스트 실행
+  - 서버 콘솔 및 브라우저 콘솔에 인증 상태 로그 출력
 
 - [ ] **results.js**: 결과 페이지 기능
   - 페이지네이션 클릭 처리
@@ -194,15 +219,21 @@ Board App은 다음 핵심 기능을 담당합니다:
 
 ### 7. URL 설정
 
-- [ ] **URL 구성**: `board/urls.py`
+- [x] **URL 구성**: `board/urls.py` (2025-09-23 업데이트)
   ```python
   urlpatterns = [
+      # 메인 뷰
       path('results/<str:redis_key>/', PropertyListView.as_view(), name='property_list'),
-      path('property/<int:pk>/', PropertyDetailView.as_view(), name='property_detail'),
+
+      # API 뷰들
+      path('api/auth-test/', AuthTestAPIView.as_view(), name='api_auth_test'),  # 추가됨
       path('api/results/<str:redis_key>/', ResultsAPIView.as_view(), name='api_results'),
       path('api/recommendations/', RecommendationAPIView.as_view(), name='api_recommendations'),
+      path('api/results/<str:redis_key>/<int:property_index>/', PropertyDetailAPIView.as_view(), name='api_property_detail'),
   ]
   ```
+  - Import 경로 업데이트: `board.views.base_views`, `board.views.api_views`
+  - AuthTestAPIView 추가
 
 ### 8. Celery Beat 작업 연동
 
