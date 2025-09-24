@@ -1,8 +1,23 @@
 """
-ChatGPT 더미 API 테스트 모듈
+Home App - ChatGPT 더미 API 테스트
 
-utils.ai_dummy.DummyChatGPTClient에 대한 테스트케이스
-실제 API 호출 없이 하드코딩된 응답이 올바르게 작동하는지 검증
+이 모듈은 다음과 같은 테스트들을 포함합니다:
+1. test_client_initialization: 클라이언트 초기화 테스트
+2. test_extract_keywords_seoul_gangnam: 서울 강남구 패턴 키워드 추출 테스트
+3. test_extract_keywords_gyeonggi_suwon: 경기도 수원시 패턴 키워드 추출 테스트
+4. test_extract_keywords_default_pattern: 기본 패턴 적용 테스트
+5. test_validate_response_success: 응답 검증 성공 테스트
+6. test_validate_response_missing_address_failure: 주소 누락 시 검증 실패 테스트
+7. test_enhance_response_from_query_transaction_type: 쿼리에서 거래타입 추출 테스트
+8. test_enhance_response_from_query_building_type: 쿼리에서 건물타입 추출 테스트
+9. test_enhance_response_from_query_price: 쿼리에서 가격 추출 테스트
+10. test_enhance_response_from_query_area: 쿼리에서 평수 추출 테스트
+11. test_get_available_patterns: 사용 가능한 패턴 목록 반환 테스트
+12. test_test_all_patterns: 모든 패턴 테스트 기능 검증
+13. test_singleton_instance: 싱글톤 인스턴스 테스트
+14. test_various_query_patterns: 다양한 쿼리 패턴에 대한 파라미터화 테스트
+15. test_client_error_handling: 클라이언트 에러 처리 테스트
+16. test_data_type_conversion: 데이터 타입 변환 테스트
 """
 
 import pytest

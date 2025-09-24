@@ -1,8 +1,27 @@
 """
-Redis 핸들러 테스트 모듈
+Home App - Redis 핸들러 테스트
 
-utils.redis_handler.RedisUserDataHandler에 대한 테스트케이스
-직렬화/역직렬화, 데이터 저장/조회, 복합키 생성 등을 검증
+이 모듈은 다음과 같은 테스트들을 포함합니다:
+1. test_handler_initialization: 핸들러 초기화 테스트
+2. test_generate_keyword_key: 키워드 복합키 생성 테스트
+3. test_generate_crawling_key: 크롤링 데이터 복합키 생성 테스트
+4. test_save_user_keywords_success: 사용자 키워드 저장 성공 테스트
+5. test_get_user_keywords_success: 사용자 키워드 조회 성공 테스트
+6. test_get_user_keywords_not_found: 사용자 키워드 조회 실패 테스트
+7. test_save_user_crawling_data_new_data: 사용자 크롤링 데이터 저장 테스트
+8. test_save_user_crawling_data_accumulate: 사용자 크롤링 데이터 누적 저장 테스트
+9. test_get_user_crawling_data_success: 사용자 크롤링 데이터 조회 성공 테스트
+10. test_serialization_deserialization_consistency: 직렬화/역직렬화 일관성 테스트
+11. test_check_user_data_exists: 사용자 데이터 존재 여부 확인 테스트
+12. test_clear_user_data_all: 사용자 데이터 전체 삭제 테스트
+13. test_clear_user_data_keyword_only: 사용자 키워드 데이터만 삭제 테스트
+14. test_get_data_info: 사용자 데이터 정보 조회 테스트
+15. test_json_serialization_error_handling: JSON 직렬화 오류 처리 테스트
+16. test_json_deserialization_error_handling: JSON 역직렬화 오류 처리 테스트
+17. test_redis_connection_error_handling: Redis 연결 오류 처리 테스트
+18. test_get_redis_handler_singleton: Redis 핸들러 싱글톤 테스트
+19. test_redis_real_connection: 실제 Redis 연결 테스트 (통합 테스트)
+20. test_multiple_users_data_isolation: 다중 사용자 데이터 격리 테스트 (파라미터화 테스트)
 """
 
 import pytest

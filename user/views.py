@@ -21,8 +21,23 @@ class SignupView(CreateView):
 
     def form_valid(self, form):
         """가입 성공시 성공 메시지 출력"""
+        print(f"\n--- SignupView: form_valid called ---")
         response = super().form_valid(form)
         messages.success(self.request, '회원가입이 완료되었습니다. 로그인해주세요.')
+        print(f"Response from super().form_valid: {response}")
+        print(f"Response status code: {response.status_code}")
+        print(f"Response headers: {response.headers}")
+        print(f"--- End SignupView: form_valid ---")
+        return response
+
+    def form_invalid(self, form):
+        """가입 실패시 오류 메시지 출력"""
+        print(f"\n--- SignupView: form_invalid called ---")
+        print(f"Form errors: {form.errors}")
+        response = super().form_invalid(form)
+        print(f"Response from super().form_invalid: {response}")
+        print(f"Response status code: {response.status_code}")
+        print(f"--- End SignupView: form_invalid ---")
         return response
 
     def dispatch(self, request, *args, **kwargs):
@@ -49,6 +64,11 @@ class CustomLoginView(LoginView):
         response = super().form_valid(form)
         messages.success(self.request, f'{self.request.user.username}님, 환영합니다!')
         return response
+
+    def form_invalid(self, form):
+        """로그인 실패시 메시지 출력"""
+        messages.error(self.request, '로그인에 실패했습니다. 사용자 이름 또는 비밀번호를 확인해주세요.')
+        return super().form_invalid(form)
 
 
 class CustomLogoutView(LogoutView):

@@ -8,12 +8,12 @@ import json
 User = get_user_model()
 
 @pytest.fixture
-def create_user():
+def create_user(db):
     """Fixture to create a test user."""
     return User.objects.create_user(username='testuser', password='testpassword')
 
 @pytest.fixture
-def create_search_history(create_user):
+def create_search_history(create_user, db):
     """Fixture to create a test search history."""
     user = create_user
     return SearchHistory.objects.create(
@@ -26,7 +26,7 @@ def create_search_history(create_user):
     )
 
 @pytest.fixture
-def create_properties():
+def create_properties(db):
     """Fixture to create multiple test properties."""
     properties = []
     for i in range(35): # Create more than paginate_by items
@@ -48,21 +48,29 @@ def create_properties():
         ))
     return properties
 
-@pytest.mark.django_db
 @pytest.mark.views
 @pytest.mark.board_app
 class TestPropertyListView:
 
-    def test_property_list_view_requires_login(self, client):
+    def test_property_list_view_requires_login(self, client, db):
         """Test that PropertyListView redirects unauthenticated users to login."""
         url = reverse('board:results')
         response = client.get(url)
         assert response.status_code == 302 # Redirect to login
         assert 'login' in response.url
 
-    def test_property_list_view_with_valid_search_history(self, client, create_user, create_search_history, create_properties):
+    def test_property_list_view_with_valid_search_history(self, client, create_user, create_search_history, create_properties, mocker):
         """Test that PropertyListView renders correctly with a valid search history ID."""
-        client.login(username='testuser', password='testpassword')
+        client.login(username=create_user.username, password='testpassword')
+
+        # Mock SearchHistory.objects.get
+        mocker.patch('home.models.SearchHistory.objects.get', return_value=create_search_history)
+
+        # Mock Property.objects.filter
+        mock_property_queryset = mocker.MagicMock()
+        mock_property_queryset.count.return_value = 30
+        mocker.patch('home.models.Property.objects.filter', return_value=mock_property_queryset)
+
         url = reverse('board:results') + f"?search_history_id={create_search_history.id}"
         response = client.get(url)
 
@@ -72,34 +80,56 @@ class TestPropertyListView:
         assert response.context['properties'].count() == 30 # Default paginate_by
         assert response.context['search_history'].id == create_search_history.id
 
-    def test_property_list_view_pagination(self, client, create_user, create_search_history, create_properties):
+    def test_property_list_view_pagination(self, client, create_user, create_search_history, create_properties, mocker):
         """Test that PropertyListView handles pagination correctly."""
-        client.login(username='testuser', password='testpassword')
+        client.login(username=create_user.username, password='testpassword')
         
+        # Mock SearchHistory.objects.get
+        mocker.patch('home.models.SearchHistory.objects.get', return_value=create_search_history)
+
+        # Mock Property.objects.filter
+        mock_property_queryset = mocker.MagicMock()
+        mock_property_queryset.count.return_value = 35 # Total properties
+        mock_property_queryset.__getitem__.side_effect = [
+            create_properties[0:30], # First page
+            create_properties[30:35] # Second page
+        ]
+        mocker.patch('home.models.Property.objects.filter', return_value=mock_property_queryset)
+
         # Test first page
         url_page1 = reverse('board:results') + f"?page=1&search_history_id={create_search_history.id}"
         response_page1 = client.get(url_page1)
         assert response_page1.status_code == 200
-        assert response_page1.context['properties'].count() == 30
+        assert len(response_page1.context['properties']) == 30
         assert response_page1.context['page_obj'].number == 1
 
         # Test second page
         url_page2 = reverse('board:results') + f"?page=2&search_history_id={create_search_history.id}"
         response_page2 = client.get(url_page2)
         assert response_page2.status_code == 200
-        assert response_page2.context['properties'].count() == 5 # 35 total - 30 on first page = 5
+        assert len(response_page2.context['properties']) == 5 # 35 total - 30 on first page = 5
         assert response_page2.context['page_obj'].number == 2
 
-    def test_property_list_view_with_invalid_search_history_id(self, client, create_user, create_properties):
+    def test_property_list_view_with_invalid_search_history_id(self, client, create_user, create_properties, mocker):
         """Test that PropertyListView returns 404 for an invalid search history ID."""
-        client.login(username='testuser', password='testpassword')
+        client.login(username=create_user.username, password='testpassword')
+
+        # Mock SearchHistory.objects.get to raise DoesNotExist
+        mocker.patch('home.models.SearchHistory.objects.get', side_effect=SearchHistory.DoesNotExist)
+
         url = reverse('board:results') + "?search_history_id=99999" # Non-existent ID
         response = client.get(url)
         assert response.status_code == 404 # Should return 404 if search history not found
 
-    def test_property_list_view_with_missing_search_history_id(self, client, create_user, create_properties):
+    def test_property_list_view_with_missing_search_history_id(self, client, create_user, create_properties, mocker):
         """Test that PropertyListView returns an empty queryset if search_history_id is missing."""
-        client.login(username='testuser', password='testpassword')
+        client.login(username=create_user.username, password='testpassword')
+
+        # Mock Property.objects.filter to return an empty queryset
+        mock_property_queryset = mocker.MagicMock()
+        mock_property_queryset.count.return_value = 0
+        mocker.patch('home.models.Property.objects.filter', return_value=mock_property_queryset)
+
         url = reverse('board:results') # Missing search_history_id
         response = client.get(url)
         assert response.status_code == 200 # Still 200, but properties context should be empty

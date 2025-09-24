@@ -53,7 +53,7 @@ python_functions = ["test_*"]
 addopts = [
     "-v",                           # 자세한 출력
     "--tb=short",                   # 트레이스백 형식
-    "--reuse-db",                   # DB 재사용으로 속도 향상
+    "--create-db",                  # 테스트 DB 새로 생성 (MySQL 임시 DB)
     "--nomigrations",               # 마이그레이션 없이 테스트 (빠른 실행)
     "--durations=10",               # 느린 테스트 상위 10개 표시
     "--strict-markers",             # 정의되지 않은 마커 금지

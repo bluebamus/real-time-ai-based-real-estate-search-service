@@ -1,8 +1,10 @@
 """
-ChatGPT 키워드 추출 테스트 모듈
+Home App - ChatGPT 키워드 추출 테스트
 
-home.services.keyword_extraction.ChatGPTKeywordExtractor에 대한 테스트케이스
-실제 ChatGPT API를 사용하여 자연어 쿼리에서 키워드 추출을 검증
+이 모듈은 다음과 같은 테스트들을 포함합니다:
+1. test_keyword_extraction_seoul_seocho: 서울시 서초구 매물 검색 쿼리의 키워드 추출 테스트
+2. test_keyword_extraction_validation: ChatGPT 응답 검증 기능 테스트
+3. test_get_keyword_extractor_singleton: 키워드 추출기 싱글톤 패턴 테스트
 """
 
 import pytest

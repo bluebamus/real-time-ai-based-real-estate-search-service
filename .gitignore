@@ -1,5 +1,45 @@
-# Python virtual environment
-.venv/
-
+# Environment Variables
+# ---
+# API 키, 데이터베이스 비밀번호 등 민감한 정보를 담고 있으므로 절대 Git에 올리지 않습니다.
 .env
+.env.*
+
+# Python Virtual Environment
+# ---
+# 각 개발자 환경마다 다르며, 용량이 크고 불필요한 의존성 파일들입니다.
+.venv/
+venv/
+env/
+
+# Django Specific
+# ---
+# # 사용자가 업로드한 파일(이미지 등)이 저장되는 폴더입니다.
+# /media/
+# # collectstatic 실행 시 모든 정적 파일이 수집되는 폴더입니다.
+# /staticfiles/
+
+# Database
+# ---
+# 로컬 개발용 데이터베이스 파일은 버전 관리에서 제외합니다.
+*.sqlite3
+db.sqlite3
+
+# Python bytecode/cache
+# ---
+# 파이썬 실행 시 자동으로 생성되는 컴파일된 파일 및 캐시 폴더입니다.
 *.pyc
+__pycache__/
+
+# IDE/Editor directories
+# ---
+# VS Code, PyCharm 등 개인의 개발 환경 설정 파일입니다.
+# .vscode/
+# .idea/
+
+# Log and Test files
+# ---
+# 애플리케이션 실행 로그 파일 및 테스트 실행 시 생성되는 캐시/리포트 파일입니다.
+*.log
+.pytest_cache/
+.coverage
+htmlcov/

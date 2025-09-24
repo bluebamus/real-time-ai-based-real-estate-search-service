@@ -1,3 +1,11 @@
+"""
+Home App - ChatGPT 통합 테스트
+
+이 모듈은 다음과 같은 테스트들을 포함합니다:
+1. test_chatgpt_keyword_extraction: ChatGPT API를 통한 자연어 쿼리 키워드 추출 테스트
+2. test_chatgpt_area_range_spacing: ChatGPT가 반환하는 면적 범위 값의 공백 처리 검증 테스트
+"""
+
 import pytest
 import os
 from django.conf import settings

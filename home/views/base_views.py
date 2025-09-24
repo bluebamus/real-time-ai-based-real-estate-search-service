@@ -4,10 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
-    """
-    Tx œ) ˜tÀ ð
-    ChatGPT  ¬ €É x0˜t¤ õ
-    """
+
     template_name = 'home/index.html'
 
     def get_context_data(self, **kwargs):
