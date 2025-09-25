@@ -241,7 +241,7 @@ EXTRACT_PROMPT = """
 - [ ] **test_models.py**: 모델 테스트
   - SearchHistory 모델 생성 테스트
 
-- [x] **test_ai_dummy.py, test_redis_handler.py**: Utils 클래스 연동 테스트 완료
+- [x] **test_redis_handler.py**: Utils 클래스 연동 테스트 완료
   - ChatGPT 더미 클라이언트 테스트 (42개 테스트 케이스 통과)
   - Redis 사용자 데이터 핸들러 테스트 (직렬화/역직렬화 일관성 검증)
   - 복합키 생성 및 데이터 격리 테스트
@@ -439,7 +439,6 @@ class ConfigConfig(AppConfig):
    - 크롤링 데이터 누적 저장 기능
 
 4. **포괄적 테스트 케이스** (`home/tests/`)
-   - `test_ai_dummy.py`: 더미 클라이언트 패턴 매칭 테스트 (19개 통과)
    - `test_keyword_extraction.py`: 실제 ChatGPT API 키워드 추출 테스트 (1개 통과)
    - `test_redis_handler.py`: Redis 직렬화/역직렬화 일관성 테스트 (22개 통과)
    - **총 42개 테스트 케이스 모두 성공적으로 통과**
