@@ -1,7 +1,7 @@
 """
 ChatGPT 키워드 추출기 통합 테스트
 
-home/services/backup/keyword_extraction.py의 싱글톤 인스턴스를 사용한 통합 테스트
+home/services/keyword_extraction.py의 싱글톤 인스턴스를 사용한 통합 테스트
 성공 케이스와 실패 케이스에 대한 검증을 포함
 """
 
@@ -23,7 +23,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 import django
 django.setup()
 
-from home.services.backup.keyword_extraction import get_keyword_extractor
+from home.services.keyword_extraction import get_keyword_extractor
 
 
 class TestChatGPTKeywordExtractor:

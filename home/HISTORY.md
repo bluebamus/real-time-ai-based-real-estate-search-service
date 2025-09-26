@@ -43,7 +43,7 @@
 #### ChatGPT API Integration:
 - ✅ **ChatGPT Client**: Implemented real ChatGPTClient with OpenAI API integration
 - ✅ **Dummy Testing**: Created DummyChatGPTClient for development without API calls
-- ✅ **Factory Pattern**: get_chatgpt_client() function returns appropriate client based on settings
+- ✅ **Factory Pattern**: get_() function returns appropriate client based on settings
 - ✅ **Error Handling**: Comprehensive error handling with fallback responses
 - ✅ **Natural Language Processing**: Query analysis for Korean real estate terms
 
@@ -56,7 +56,6 @@
 - `home/admin.py` - Admin interface for models
 - `home/views/` directory - Complete views implementation
 - `home/urls.py` - URL configuration for all endpoints
-- `home/utils/chatgpt_client.py` - ChatGPT API integration
 - `config/urls.py` - Updated main URL configuration
 
 ### API Endpoints Available:

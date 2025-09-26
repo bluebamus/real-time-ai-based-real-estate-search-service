@@ -531,7 +531,6 @@ real_estate_project/
 │   │   ├── urls.py
 │   │   ├── services/
 │   │   │   ├── nlp_processor.py
-│   │   │   ├── chatgpt_client.py
 │   │   │   └── keyword_parser.py
 │   │   └── tests.py
 │   ├── board/

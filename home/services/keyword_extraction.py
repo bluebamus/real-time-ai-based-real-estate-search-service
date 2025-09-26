@@ -131,43 +131,43 @@ class ChatGPTKeywordExtractor:
 
             system_prompt = """Extract Korean real estate search keywords from the query and return JSON.
 
-REQUIRED FIELDS - Return error only if truly missing:
-1. address: Extract Korean address with 시도+시군구 minimum
-   - VALID: "서울시 강남구", "경기도 수원시", "부산시 해운대구", "인천시 남동구"
-   - ERROR only if: incomplete like "경기도" alone, or impossible like "부산시 강남구"
+            REQUIRED FIELDS - Return error only if truly missing:
+            1. address: Extract Korean address with 시도+시군구 minimum
+            - VALID: "서울시 강남구", "경기도 수원시", "부산시 해운대구", "인천시 남동구"
+            - ERROR only if: incomplete like "경기도" alone, or impossible like "부산시 강남구"
 
-2. transaction_type: Extract transaction types from query
-   - OPTIONS: ["매매","전세","월세","단기임대"]
-   - EXTRACT ALL mentioned types as array
-   - ERROR only if NO transaction type found in query
+            2. transaction_type: Extract transaction types from query
+            - OPTIONS: ["매매","전세","월세","단기임대"]
+            - EXTRACT ALL mentioned types as array
+            - ERROR only if NO transaction type found in query
 
-3. building_type: Extract property types from query
-   - OPTIONS: ["아파트","오피스텔","빌라","아파트분양권","오피스텔분양권","재건축","전원주택","단독/다가구","상가주택","한옥주택","재개발","원룸","상가","사무실","공장/창고","건물","토지","지식산업센터"]
-   - EXTRACT ALL mentioned types as array
-   - ERROR only if NO building type found in query
+            3. building_type: Extract property types from query
+            - OPTIONS: ["아파트","오피스텔","빌라","아파트분양권","오피스텔분양권","재건축","전원주택","단독/다가구","상가주택","한옥주택","재개발","원룸","상가","사무실","공장/창고","건물","토지","지식산업센터"]
+            - EXTRACT ALL mentioned types as array
+            - ERROR only if NO building type found in query
 
-OPTIONAL FIELDS - null if not mentioned:
-- sale_price: [single_price] or [min_price, max_price] or null
-- deposit: [single_amount] or [min_amount, max_amount] or null
-- monthly_rent: [single_amount] or [min_amount, max_amount] or null
-- area_range: Use EXACT options: "~10평"|"10평대"|"20평대"|"30평대"|"40평대"|"50평대"|"60평대"|"70평~"
-  For 8평→"~10평", for 75평→"70평~", for multiple ranges use LAST mentioned
+            OPTIONAL FIELDS - null if not mentioned:
+            - sale_price: [single_price] or [min_price, max_price] or null
+            - deposit: [single_amount] or [min_amount, max_amount] or null
+            - monthly_rent: [single_amount] or [min_amount, max_amount] or null
+            - area_range: Use EXACT options: "~10평"|"10평대"|"20평대"|"30평대"|"40평대"|"50평대"|"60평대"|"70평~"
+            For 8평→"~10평", for 75평→"70평~", for multiple ranges use LAST mentioned
 
-RESPONSE FORMAT:
-{"status":"success|error","data":{address,transaction_type,building_type,sale_price,deposit,monthly_rent,area_range}|null,"error":{"code":"MISSING_ADDRESS|MISSING_TRANSACTION_TYPE|MISSING_BUILDING_TYPE","message":"description"}|null}
+            RESPONSE FORMAT:
+            {"status":"success|error","data":{address,transaction_type,building_type,sale_price,deposit,monthly_rent,area_range}|null,"error":{"code":"MISSING_ADDRESS|MISSING_TRANSACTION_TYPE|MISSING_BUILDING_TYPE","message":"description"}|null}
 
-VALIDATION RULES:
-- If building_type is null/empty/missing → MUST return MISSING_BUILDING_TYPE error
-- If transaction_type is null/empty/missing → MUST return MISSING_TRANSACTION_TYPE error
-- If address is incomplete → MUST return MISSING_ADDRESS error
+            VALIDATION RULES:
+            - If building_type is null/empty/missing → MUST return MISSING_BUILDING_TYPE error
+            - If transaction_type is null/empty/missing → MUST return MISSING_TRANSACTION_TYPE error
+            - If address is incomplete → MUST return MISSING_ADDRESS error
 
-EXAMPLES:
-"서울시 강남구 아파트 매매 8평" → SUCCESS (has address+transaction+building, area_range="~10평")
-"경기도 매매 아파트" → ERROR MISSING_ADDRESS (only 시도)
-"서울시 강남구 아파트" → ERROR MISSING_TRANSACTION_TYPE (no 매매/전세/월세/단기임대)
-"부산시 해운대구 매매 2억" → ERROR MISSING_BUILDING_TYPE (no 아파트/오피스텔/빌라 etc)
+            EXAMPLES:
+            "서울시 강남구 아파트 매매 8평" → SUCCESS (has address+transaction+building, area_range="~10평")
+            "경기도 매매 아파트" → ERROR MISSING_ADDRESS (only 시도)
+            "서울시 강남구 아파트" → ERROR MISSING_TRANSACTION_TYPE (no 매매/전세/월세/단기임대)
+            "부산시 해운대구 매매 2억" → ERROR MISSING_BUILDING_TYPE (no 아파트/오피스텔/빌라 etc)
 
-CRITICAL: ALL 3 required fields (address, transaction_type, building_type) MUST have values. Return error if ANY is missing."""
+            CRITICAL: ALL 3 required fields (address, transaction_type, building_type) MUST have values. Return error if ANY is missing."""
 
             user_prompt = f"쿼리: {query_text}"
 
