@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser
 
 from home.services.keyword_extraction import get_keyword_extractor
+from home.models import SearchHistory
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,26 @@ class SearchAPIView(APIView):
                 print(f"Area Range: {data.get('area_range')}")
                 print("=================================")
 
+                # 성공적인 키워드 추출 결과를 SearchHistory에 저장
+                try:
+                    search_history = SearchHistory.objects.create(
+                        user=request.user,
+                        is_global=False,
+                        query_text=query_text,
+                        address=data.get('address', {}),
+                        transaction_type=data.get('transaction_type', []),
+                        building_type=data.get('building_type', []),
+                        sale_price=data.get('sale_price'),
+                        deposit=data.get('deposit'),
+                        monthly_rent=data.get('monthly_rent'),
+                        area_range=data.get('area_range', ''),
+                        error_type=None,
+                    )
+                    print(f"SearchHistory saved with ID: {search_history.id}")
+                except Exception as save_error:
+                    print(f"Failed to save SearchHistory: {save_error}")
+                    logger.error(f"Failed to save SearchHistory for user {request.user.id}: {save_error}")
+
                 # 성공적인 키워드 추출 결과 반환
                 return Response(
                     {
@@ -142,6 +163,26 @@ class SearchAPIView(APIView):
                 error_code = "VALIDATION_ERROR"
                 error_message = error_msg
 
+            # 에러가 발생한 경우 SearchHistory에 에러 정보 저장
+            try:
+                search_history = SearchHistory.objects.create(
+                    user=request.user,
+                    is_global=False,
+                    query_text=query_text,
+                    address={},
+                    transaction_type=[],
+                    building_type=[],
+                    sale_price=None,
+                    deposit=None,
+                    monthly_rent=None,
+                    area_range='',
+                    error_type=error_code,
+                )
+                print(f"SearchHistory saved with error - ID: {search_history.id}, Error: {error_code}")
+            except Exception as save_error:
+                print(f"Failed to save SearchHistory with error: {save_error}")
+                logger.error(f"Failed to save SearchHistory with error for user {request.user.id}: {save_error}")
+
             return Response(
                 {
                     "status": "error",
@@ -159,6 +200,26 @@ class SearchAPIView(APIView):
             print(f"Error type: {type(e).__name__}")
             print("=================================")
             logger.error(f"Unexpected error in SearchAPIView for query '{query_text}': {str(e)}", exc_info=True)
+
+            # 예상치 못한 오류 발생 시 SearchHistory에 API_ERROR로 저장
+            try:
+                search_history = SearchHistory.objects.create(
+                    user=request.user,
+                    is_global=False,
+                    query_text=query_text,
+                    address={},
+                    transaction_type=[],
+                    building_type=[],
+                    sale_price=None,
+                    deposit=None,
+                    monthly_rent=None,
+                    area_range='',
+                    error_type='API_ERROR',
+                )
+                print(f"SearchHistory saved with API_ERROR - ID: {search_history.id}")
+            except Exception as save_error:
+                print(f"Failed to save SearchHistory with API_ERROR: {save_error}")
+                logger.error(f"Failed to save SearchHistory with API_ERROR for user {request.user.id}: {save_error}")
 
             return Response(
                 {
